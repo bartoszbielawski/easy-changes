@@ -66,5 +66,6 @@ checks run in all 12 keys. Add a case there whenever you change theory behaviour
 - **Enharmonic spelling is deliberate.** `rootName()` in `chords.js` spells by chord type in
   Auto; scales pick the root spelling with fewest accidentals, or the progression's own
   spelling. G# harmonic minor keeps its F##; that is correct.
-- The project is a **local git repository** (branch `main`, no remote). Commit only when the
-  user asks; line endings are normalised to LF by `.gitattributes`.
+- The project is a **git repository**: branch `main`, remote `origin` =
+  github.com/bartoszbielawski/easy-changes, served by GitHub Pages from `main`, so a
+  push publishes. Commit and push only when the user asks; `.gitattributes` keeps LF endings.

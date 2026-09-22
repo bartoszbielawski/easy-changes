@@ -102,4 +102,5 @@ Likely next steps, roughly in order of value:
 5. Audio playback of a voicing or scale.
 6. Saving a progression to a URL to share (the hash already carries the chord text).
 
-The project is a local git repository (branch `main`, no remote), started from this state.
+The project is a local git repository (branch `main`, pushed to
+github.com/bartoszbielawski/easy-changes), started from this state.
