@@ -1,0 +1,302 @@
+:root {
+  --bg: #fbfaf7;
+  --surface: #ffffff;
+  --text: #1f1d1a;
+  --muted: #6f6a62;
+  --line: #d9d4ca;
+  --accent: #c2410c;
+  --accent-contrast: #ffffff;
+  --dot: #2b2824;
+  --dot-text: #ffffff;
+  --easy: #15803d;
+  --improver: #4d7c0f;
+  --medium: #b45309;
+  --hard: #b91c1c;
+  color-scheme: light;
+
+  /* Layout: one content width and one set of control sizes for every block. */
+  --content: 960px;
+  --gutter: 16px;
+  --control-h: 36px;
+  --chip-h: 32px;
+  --radius: 8px;
+  --label-col: 3.5rem;   /* row labels on the chord page (Root / Type / Bass) */
+  --score-col: 11em;     /* level + effort column in ranking and top-3 rows */
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161513;
+    --surface: #211f1c;
+    --text: #ece8e1;
+    --muted: #a39d93;
+    --line: #45413b;
+    --accent: #fb923c;
+    --accent-contrast: #1b1107;
+    --dot: #ece8e1;
+    --dot-text: #161513;
+    --easy: #4ade80;
+    --improver: #bef264;
+    --medium: #fbbf24;
+    --hard: #f87171;
+    color-scheme: dark;
+  }
+}
+
+/* ---- Base ---------------------------------------------------------------- */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+header, main, footer {
+  max-width: calc(var(--content) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding-top: 20px; padding-bottom: 16px; }
+h1 { font-size: 1.35rem; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; margin: 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.hint { color: var(--muted); font-size: 0.88rem; margin: 4px 0 0; }
+.empty { color: var(--muted); }
+.optional { opacity: 0.5; }
+.tab { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.95rem; letter-spacing: 0.06em; }
+
+nav { display: flex; gap: 4px; }
+nav a { padding: 4px 10px; border: 1px solid transparent; border-radius: var(--radius); color: var(--muted); text-decoration: none; }
+nav a:hover { color: var(--text); }
+nav a[aria-current="page"] { color: var(--text); background: var(--surface); border-color: var(--line); }
+
+footer { color: var(--muted); font-size: 0.85rem; padding-bottom: 24px; }
+footer > * { border-top: 1px solid var(--line); padding-top: 12px; }
+footer > * + * { border-top: 0; padding-top: 0; }
+
+/* ---- Form controls ------------------------------------------------------- */
+.entry { display: grid; gap: 10px; margin: 0 0 20px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 0.8rem; color: var(--muted); }
+.field input, .field select {
+  width: 100%; height: var(--control-h); padding: 0 10px;
+  font: inherit; font-size: 0.95rem; color: var(--text);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.field.wide input { height: 42px; padding: 0 12px; font-size: 1.1rem; }
+.field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field input.invalid { border-color: var(--hard); }
+
+.examples { display: flex; flex-wrap: wrap; gap: 6px; }
+.examples button {
+  padding: 2px 10px; font: inherit; font-size: 0.8rem; color: var(--muted);
+  background: none; border: 1px dashed var(--line); border-radius: 999px; cursor: pointer;
+}
+.examples button:hover { color: var(--text); border-color: var(--accent); }
+.examples-label { font-size: 0.8rem; color: var(--muted); margin-left: 8px; align-self: center; }
+.examples button.song { border-style: solid; }
+
+/* Options fill the same width as the input above them. */
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 4px; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 0.9rem; }
+.checks label { display: inline-flex; align-items: center; gap: 6px; }
+.checks input { margin: 0; accent-color: var(--accent); }
+.error { color: var(--hard); margin: 0; min-height: 1em; font-size: 0.88rem; }
+.error:empty { display: none; }
+
+/* ---- Chord page pickers -------------------------------------------------- */
+.pickers { display: grid; gap: 10px; margin: 0 0 24px; }
+.picker-row { display: grid; grid-template-columns: var(--label-col) minmax(0, 1fr); gap: 12px; align-items: start; }
+.row-label {
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+  line-height: var(--chip-h);
+}
+.picker { display: flex; flex-wrap: wrap; gap: 6px; }
+.picker button, .picker select {
+  height: var(--chip-h); min-width: 40px; padding: 0 9px;
+  font: inherit; font-size: 0.9rem; color: var(--text);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+}
+.picker button:hover, .picker select:hover { border-color: var(--accent); }
+/* Segmented Auto / ♭ / ♯ control at the end of the root row. */
+.seg { display: inline-flex; margin-left: auto; }
+.picker .seg button { min-width: 0; border-radius: 0; margin-left: -1px; }
+.picker .seg button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; }
+.picker .seg button:last-child { border-radius: 0 6px 6px 0; }
+.picker .seg button[aria-pressed="true"] { position: relative; }
+.picker button[aria-pressed="true"], .picker select.active { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.picker select option, .picker select optgroup { background: var(--surface); color: var(--text); }
+
+#chord-info h2 { margin: 0 0 6px; font-size: 1.8rem; }
+#chord-info h2 small { font-size: 1rem; font-weight: 400; color: var(--muted); margin-left: 6px; }
+#chord-info dl { display: flex; flex-wrap: wrap; gap: 6px 28px; margin: 0; }
+#chord-info dt { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+#chord-info dd { margin: 0; font-size: 1.05rem; word-spacing: 0.3em; }
+
+/* ---- Voicing cards and diagrams ----------------------------------------- */
+.voicing-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px; margin: 20px 0 24px;
+}
+.voicing {
+  margin: 0; padding: 10px 8px 12px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center;
+}
+.voicing.differs { border-color: var(--accent); }
+.voicing figcaption { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; font-size: 0.82rem; }
+.shape, .reasons { color: var(--muted); }
+.reasons { font-size: 0.75rem; }
+
+.badge { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.badge.beginner { color: var(--easy); }
+.badge.improver { color: var(--improver); }
+.badge.intermediate { color: var(--medium); }
+.badge.advanced { color: var(--hard); }
+
+.chord-diagram { overflow: visible; }
+.chord-diagram .string, .chord-diagram .fret { stroke: var(--line); stroke-width: 1.2; }
+.chord-diagram .string { stroke: var(--muted); stroke-width: 1; }
+.chord-diagram .nut { stroke: var(--text); stroke-width: 4; }
+.chord-diagram .dot, .chord-diagram .barre { fill: var(--dot); }
+.chord-diagram .dot.root { fill: var(--accent); }
+.chord-diagram .open { fill: none; stroke: var(--text); stroke-width: 1.4; }
+.chord-diagram .open.root { stroke: var(--accent); stroke-width: 2; }
+.chord-diagram .finger { fill: var(--dot-text); font-size: 10px; font-weight: 700; }
+.chord-diagram .dot.root + .finger { fill: var(--accent-contrast); }
+.chord-diagram .marker { fill: var(--muted); font-size: 14px; }
+.chord-diagram .fret-label { fill: var(--muted); font-size: 11px; }
+.chord-diagram .note-name { fill: var(--muted); font-size: 10px; }
+
+/* ---- Progression page: harmony ------------------------------------------- */
+#harmony { margin: 0 0 28px; }
+#harmony:empty { display: none; }
+.h-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 4px; margin-top: 12px; }
+.h-chord {
+  display: flex; flex-direction: column; align-items: center; min-width: 76px; padding: 6px 10px 7px;
+  background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--line); border-radius: var(--radius);
+}
+.h-chord.fn-T { border-top-color: var(--easy); }
+.h-chord.fn-S { border-top-color: var(--medium); }
+.h-chord.fn-D { border-top-color: var(--hard); }
+.h-chord.secondary, .h-chord.borrowed, .h-chord.chromatic, .h-chord.tonicized { border-style: dashed; border-top-style: solid; }
+.h-sym { font-size: 0.8rem; color: var(--muted); }
+.h-num { font-size: 1.25rem; font-weight: 700; font-family: Georgia, "Times New Roman", serif; line-height: 1.2; }
+.h-fn { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.h-move { display: flex; flex-direction: column; align-items: center; min-width: 30px; font-size: 0.8rem; color: var(--muted); }
+.h-move.strong { color: var(--easy); font-weight: 700; }
+.h-move small { font-size: 0.65rem; }
+.h-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 10px 0 0; font-size: 0.78rem; color: var(--muted); }
+.h-key span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 6px; vertical-align: middle; background: var(--line); }
+.h-key .k-T::before { background: var(--easy); }
+.h-key .k-S::before { background: var(--medium); }
+.h-key .k-D::before { background: var(--hard); }
+.h-key .k-out::before { background: none; border-top: 2px dashed var(--muted); height: 0; }
+.h-key span:last-child::before { display: none; }
+.h-key b { color: var(--easy); }
+.h-notes { margin: 12px 0 0; padding-left: 18px; font-size: 0.88rem; color: var(--muted); }
+.h-notes li { margin: 2px 0; }
+.h-notes strong { color: var(--text); }
+
+/* ---- Progression page: rankings ----------------------------------------- */
+.rankings { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px 24px; }
+.rankings .hint { margin: 2px 0 8px; }
+.options-list, .alts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+
+/* Ranking rows and top-3 rows share one look and one score column. */
+.option, .alt {
+  width: 100%; display: grid; gap: 10px; align-items: center;
+  min-height: 40px; padding: 5px 10px;
+  font: inherit; font-size: 0.88rem; text-align: left; color: var(--text);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer;
+}
+.option { grid-template-columns: 5.5em minmax(0, 1fr) 44px var(--score-col); }
+.alt { grid-template-columns: 2em minmax(0, 1fr) var(--score-col); }
+.option:hover, .alt:hover { border-color: var(--accent); }
+.option[aria-pressed="true"], .alt[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.option.infeasible { color: var(--muted); }
+.option.infeasible .opt-score { grid-column: span 2; justify-content: flex-end; }
+
+.opt-label { font-weight: 600; line-height: 1.2; }
+.opt-label small { display: block; font-weight: 400; color: var(--muted); font-size: 0.75rem; }
+.opt-chords { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opt-chords s { opacity: 0.6; }
+.opt-meter { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.opt-meter span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+
+/* Level on the left, effort on the right, same position in every row. */
+.opt-score, .alt-cost {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.effort { font-variant-numeric: tabular-nums; }
+
+.alt-rank { font-weight: 700; color: var(--muted); }
+.alt-tabs { display: flex; flex-wrap: wrap; gap: 2px 14px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: 0.04em; }
+.alt-tabs .diff { color: var(--accent); font-weight: 700; }
+
+/* ---- Progression page: arrangement --------------------------------------- */
+#arrangement { margin: 32px 0 28px; }
+#arrangement .alts { margin: 10px 0 0; }
+#arrangement > .hint { margin-top: 10px; }
+.sequence { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px 4px; margin-top: 14px; }
+.sequence .voicing { width: 150px; justify-content: flex-start; }
+.sequence .move { align-self: center; }
+.step-name { font-weight: 700; font-size: 1.1rem; }
+.step-name small, .sounds { font-weight: 400; font-size: 0.75rem; color: var(--muted); }
+.move { display: flex; flex-direction: column; align-items: center; width: 40px; color: var(--muted); font-size: 1.1rem; line-height: 1.2; }
+.move small { font-size: 0.7rem; }
+.move.stay, .move.slide { color: var(--easy); }
+
+/* ---- Progression page: scales -------------------------------------------- */
+#scales { margin: 8px 0 32px; }
+#scales h3 { font-size: 1rem; margin: 22px 0 8px; }
+#scales h3 small { font-weight: 400; color: var(--muted); }
+.scale-list { margin-top: 10px; }
+.scale-row { line-height: 1.3; }
+.scale-main small { color: var(--muted); font-weight: 400; }
+.scale-notes { font-size: 0.8rem; }
+.per-chord { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.per-chord li {
+  display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: 10px; align-items: baseline;
+  padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: 0.88rem;
+}
+.per-chord li.misfit { border-color: var(--medium); }
+.pc-chord { font-weight: 700; }
+.watch { color: var(--medium); font-weight: 600; text-decoration: underline dotted; cursor: help; }
+.fb-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 22px 0 8px; }
+.fb-head h3 { margin: 0 !important; }
+.fb-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 8px 6px 2px; }
+.fretboard { display: block; width: 100%; min-width: 720px; height: auto; }
+.fb-string { stroke: var(--muted); stroke-width: 1; }
+.fb-fret { stroke: var(--line); stroke-width: 1.5; }
+.fb-nut { stroke: var(--text); stroke-width: 4; }
+.fb-marker { fill: var(--line); }
+.fb-num { fill: var(--muted); font-size: 11px; }
+.fb-pos { fill: var(--accent); opacity: 0.12; }
+.fb-note circle { fill: var(--surface); stroke: var(--text); stroke-width: 1.2; }
+.fb-note text { fill: var(--text); font-size: 9.5px; font-weight: 600; }
+.fb-note.root circle { fill: var(--accent); stroke: var(--accent); }
+.fb-note.root text { fill: var(--accent-contrast); }
+.fb-note.dim { opacity: 0.3; }
+
+/* ---- Scoring legend ------------------------------------------------------ */
+.legend { font-size: 0.85rem; color: var(--muted); }
+.legend summary { cursor: pointer; color: var(--text); }
+.legend p { margin: 8px 0; max-width: 75ch; }
+.legend table { border-collapse: collapse; margin: 4px 0; }
+.legend td { padding: 3px 14px 3px 0; vertical-align: top; }
+.legend td:first-child { width: 8.5em; }
+.legend td.num { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text); }
+#stats { margin: 12px 0 0; }
+
+/* ---- Small screens ------------------------------------------------------- */
+@media (max-width: 560px) {
+  :root { --score-col: 9.5em; --label-col: 2.75rem; }
+  .option { grid-template-columns: 5em minmax(0, 1fr) var(--score-col); }
+  .opt-meter { display: none; }
+  .option.infeasible .opt-score { grid-column: 2 / -1; justify-content: flex-start; font-size: 0.8rem; white-space: normal; }
+  .alt { grid-template-columns: 1.6em minmax(0, 1fr); }
+  .alt-cost { grid-column: 2; justify-content: flex-start; gap: 12px; }
+  .badge { font-size: 0.68rem; letter-spacing: 0.03em; }
+  .sequence .voicing { width: calc(50% - 24px); }
+  .move { width: 32px; }
+}

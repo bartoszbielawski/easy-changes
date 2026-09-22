@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Progression Planner</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Chord Finder</h1>
+    <nav><a href="index.html">Chords</a><a href="progression.html" aria-current="page">Progression</a></nav>
+  </header>
+
+  <main>
+    <form id="prog-form" class="entry" autocomplete="off">
+      <label class="field wide">
+        <span>Chords</span>
+        <input id="prog" placeholder="e.g. C G Am F  or  Bb | Gm | Eb | F" spellcheck="false">
+      </label>
+      <div class="examples" id="examples"></div>
+
+      <div class="options">
+        <label class="field">
+          <span>Key</span>
+          <select id="key"></select>
+        </label>
+        <label class="field">
+          <span>My level</span>
+          <select id="max">
+            <option value="3">Beginner</option>
+            <option value="4.5">Improver</option>
+            <option value="6.5">Intermediate</option>
+            <option value="10" selected>Advanced (anything)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Chords to avoid</span>
+          <input id="avoid" placeholder="e.g. F Bm" spellcheck="false">
+        </label>
+        <label class="field">
+          <span>Barre chords</span>
+          <select id="barres">
+            <option value="avoid">Avoid them</option>
+            <option value="normal" selected>Normal</option>
+            <option value="easy">Easy for me</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Sharps / flats</span>
+          <select id="accidentals">
+            <option value="auto">Auto (by key)</option>
+            <option value="flat">♭ Flats</option>
+            <option value="sharp">♯ Sharps</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Highest capo</span>
+          <input id="max-capo" type="number" min="0" max="11" value="7">
+        </label>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="simplify"> Allow simpler chords (Cmaj7 → C)</label>
+        <label><input type="checkbox" id="inversions"> Allow inversions (C → C/G)</label>
+        <label><input type="checkbox" id="loop" checked> Progression repeats</label>
+      </div>
+      <p id="prog-errors" class="error" aria-live="polite"></p>
+    </form>
+
+    <section id="harmony" aria-live="polite"></section>
+
+    <section class="rankings">
+      <div>
+        <h2>Change key</h2>
+        <p class="hint">Transpose everything, no capo.</p>
+        <ol id="keys" class="options-list"></ol>
+      </div>
+      <div>
+        <h2>Keep key, use a capo</h2>
+        <p class="hint">Same sound, easier shapes.</p>
+        <ol id="capos" class="options-list"></ol>
+      </div>
+    </section>
+
+    <section id="arrangement" aria-live="polite"></section>
+    <section id="scales" aria-live="polite"></section>
+  </main>
+  <footer><div id="legend"></div></footer>
+  <script type="module" src="js/progression-app.js"></script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+// Correctness tests for scales and harmonic analysis. Expected values are written out
+// from music theory, not computed by the code under test. Most checks run in all 12 keys.
+import { getChord, rootName } from '../js/chords.js';
+import { mod12 } from '../js/theory.js';
+import { parseProgression, transposeChords } from '../js/progression.js';
+import { SCALE_TYPES, makeScale, fitOverChord, suggestScales, scalePositions } from '../js/scales.js';
+import { analyzeProgression, detectKeys, romanNumeral, rootMotion } from '../js/analysis.js';
+import { TUNING } from '../js/chords.js';
+
+const results = [];
+let current = '';
+const suite = name => { current = name; };
+function check(name, ok, detail = '') {
+  results.push({ suite: current, name, ok: !!ok, detail: ok ? '' : detail });
+}
+const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+const chordsOf = text => parseProgression(text).chords;
+// A chord on a pitch class, named the usual way for its type.
+const ch = (pc, type, bassPc = null) => getChord(rootName(pc, type), type, bassPc === null ? null : NAMES[mod12(bassPc)]);
+const transposeText = (text, n) => transposeChords(chordsOf(text), n, undefined, 'auto');
+
+// ===========================================================================
+suite('Scale spelling');
+// Known spellings (the textbook answers).
+const KNOWN = [
+  [0, 'major', 'C D E F G A B'], [6, 'major', 'F# G# A# B C# D# E#'], [1, 'major', 'Db Eb F Gb Ab Bb C'],
+  [3, 'minor', 'Eb F Gb Ab Bb Cb Db'], [8, 'minor', 'G# A# B C# D# E F#'], [9, 'harmonic-minor', 'A B C D E F G#'],
+  [2, 'dorian', 'D E F G A B C'], [10, 'mixolydian', 'Bb C D Eb F G Ab'], [4, 'phrygian-dominant', 'E F G# A B C D'],
+  [5, 'lydian', 'F G A B C D E'], [11, 'locrian', 'B C D E F G A'], [9, 'minor-pentatonic', 'A C D E G'],
+  [0, 'major-pentatonic', 'C D E G A'], [9, 'blues', 'A C D Eb E G'], [2, 'melodic-minor', 'D E F G A B C#'],
+  [7, 'mixolydian-b6', 'G A B C D Eb F'], [0, 'whole-tone', 'C D E F# G# Bb'],
+  // Enharmonic choices: the spelling a musician would write.
+  [1, 'phrygian-dominant', 'C# D E# F# G# A B'], [3, 'locrian', 'D# E F# G# A B C#'],
+  [3, 'blues', 'Eb Gb Ab A Bb Db'], [8, 'harmonic-minor', 'G# A# B C# D# E F##'],
+];
+for (const [pc, id, notes] of KNOWN) {
+  const s = makeScale(pc, id);
+  check(`${s.name}`, s.notes.join(' ') === notes, `got ${s.notes.join(' ')}, expected ${notes}`);
+}
+// Every 7-note scale in every key: seven different letters, and pitch classes match the formula.
+for (const t of SCALE_TYPES) {
+  for (let pc = 0; pc < 12; pc++) {
+    for (const acc of ['auto', 'flat', 'sharp']) {
+      const s = makeScale(pc, t, acc);
+      const pcs = [...s.spelled.keys()];
+      const expected = t.intervals.map(i => mod12(pc + i));
+      if (!eq(pcs.sort(), [...expected].sort())) check(`${s.name} (${acc}) pitch classes`, false, s.notes.join(' '));
+      if (t.size === 7) {
+        const letters = new Set(s.notes.map(n => n[0]));
+        if (letters.size !== 7) check(`${s.name} (${acc}) uses 7 letters`, false, s.notes.join(' '));
+      }
+      if (acc === 'auto') {
+        // No enharmonic respelling of the root reads more easily (a double sharp/flat counts as 2).
+        const cost = sc => sc.notes.reduce((n, x) => n + (/##|bb/.test(x) ? 2 : /[#b]/.test(x) ? 1 : 0), 0);
+        const others = ['flat', 'sharp'].map(a => makeScale(pc, t, a));
+        if (others.some(o => cost(o) < cost(s))) check(`${s.name} (auto) is the easiest spelling`, false, `${s.notes.join(' ')} vs ${others.map(o => o.notes.join(' ')).join(' / ')}`);
+        if (t.size !== 7 && s.notes.some(n => /##|bb/.test(n))) check(`${s.name} (auto) has no double accidentals`, false, s.notes.join(' '));
+      }
+    }
+  }
+}
+check('all scales spelled with correct pitch classes and letters (12 keys × 3 spellings)', true);
+
+// ===========================================================================
+suite('Scale relationships');
+for (let t = 0; t < 12; t++) {
+  const ionian = makeScale(t, 'major').mask;
+  const modes = [[2, 'dorian'], [4, 'phrygian'], [5, 'lydian'], [7, 'mixolydian'], [9, 'minor'], [11, 'locrian']];
+  for (const [off, id] of modes) {
+    if (makeScale(t + off, id).mask !== ionian) check(`${NAMES[t]} major = ${NAMES[mod12(t + off)]} ${id}`, false);
+  }
+  if (makeScale(t, 'major-pentatonic').mask !== makeScale(t + 9, 'minor-pentatonic').mask) check(`${NAMES[t]} major pent = relative minor pent`, false);
+  if ((makeScale(t, 'major-pentatonic').mask & ~ionian) !== 0) check(`${NAMES[t]} major pent inside major`, false);
+  const blues = makeScale(t, 'blues').mask, minPent = makeScale(t, 'minor-pentatonic').mask;
+  if (blues !== (minPent | (1 << mod12(t + 6)))) check(`${NAMES[t]} blues = minor pent + b5`, false);
+  if (makeScale(t + 7, 'mixolydian-b6').mask !== makeScale(t, 'melodic-minor').mask) check(`${NAMES[t]} melodic minor contains its 5th mode (mixolydian b6)`, false);
+  if (makeScale(t + 7, 'phrygian-dominant').mask !== makeScale(t, 'harmonic-minor').mask) check(`${NAMES[t]} harmonic minor contains its 5th mode (phrygian dominant)`, false);
+}
+check('modes, pentatonics, blues, melodic/harmonic minor modes agree in all keys', true);
+
+// ===========================================================================
+suite('Avoid notes (chord-scale theory)');
+// [chord type, scale, avoid degrees (semitones above the chord root)] from the standard chord-scale tables.
+const AVOID = [
+  ['maj', 'major', [5]], ['maj7', 'major', [5]], ['maj7', 'lydian', []],
+  ['min', 'dorian', []], ['m7', 'dorian', []], ['m7', 'minor', [8]], ['m7', 'phrygian', [1, 8]],
+  ['7', 'mixolydian', [5]], ['7', 'lydian-dominant', []], ['7', 'phrygian-dominant', [1, 5, 8]],
+  ['m7b5', 'locrian', [1]], ['maj', 'major-pentatonic', []], ['min', 'minor-pentatonic', []],
+];
+for (const [type, scaleId, avoid] of AVOID) {
+  let failures = [];
+  for (let t = 0; t < 12; t++) {
+    const fit = fitOverChord(makeScale(t, scaleId).mask, ch(t, type));
+    const got = fit.clashes.map(c => mod12(c.pc - t)).sort((a, b) => a - b);
+    if (!eq(got, avoid)) failures.push(`${NAMES[t]}: [${got}]`);
+  }
+  check(`${type} with ${scaleId}: avoid [${avoid}]`, !failures.length, failures.join(', '));
+}
+// Weights: quality contradictions are worse than the 4th over a major chord.
+{
+  const majorScaleOverMinor = fitOverChord(makeScale(0, 'major').mask, ch(0, 'min'));   // E over Cm
+  const fourthOverMajor = fitOverChord(makeScale(0, 'major').mask, ch(0, 'maj'));       // F over C
+  check('major 3rd over a minor chord weighs more than the 4th over a major chord',
+    majorScaleOverMinor.score > fourthOverMajor.score, `${majorScaleOverMinor.score} vs ${fourthOverMajor.score}`);
+  const b9 = fitOverChord(makeScale(4, 'phrygian-dominant').mask, ch(4, '7'));
+  check('b9 / b13 over a dominant 7th are mild tensions', b9.clashes.filter(c => c.weight <= 0.5).length === 2,
+    JSON.stringify(b9.clashes));
+}
+
+// ===========================================================================
+suite('Scale positions');
+{
+  let bad = [];
+  for (const t of SCALE_TYPES) for (let pc = 0; pc < 12; pc++) {
+    const s = makeScale(pc, t);
+    for (const w of scalePositions(s)) {
+      w.perString.forEach((frets, i) => {
+        if (frets.length < 2) bad.push(`${s.name} ${w.from}-${w.to} string ${6 - i}`);
+        for (const f of frets) if (!s.spelled.has(mod12(TUNING[i].pc + f))) bad.push(`${s.name} fret ${f} not in scale`);
+        if (frets.some(f => f < w.from || f > w.to)) bad.push(`${s.name} note outside box`);
+      });
+    }
+    if (!scalePositions(s).length) bad.push(`${s.name}: no position`);
+  }
+  check('every position covers all 6 strings with ≥2 scale notes, inside the box', !bad.length, bad.slice(0, 5).join('; '));
+  const openA = scalePositions(makeScale(9, 'minor-pentatonic'), { handFret: 2 })[0];
+  check('A minor pentatonic near open chords starts in open position', openA.from === 0, `${openA.from}-${openA.to}`);
+  const highA = scalePositions(makeScale(9, 'minor-pentatonic'), { handFret: 7 }).map(w => w.from);
+  check('A minor pentatonic has the classic 5th-fret box', highA.includes(5), highA.join(','));
+}
+
+// ===========================================================================
+suite('Scale suggestions');
+// [progression, key, scales expected in the top N, N]
+const SUGGEST = [
+  ['C G Am F', 'C', ['C major pentatonic', 'C major'], 3],
+  ['Am G F G', 'Am', ['A natural minor', 'A minor pentatonic'], 2],
+  ['Em C G D', 'Em', ['E minor pentatonic', 'E natural minor'], 3],
+  ['E7 A7 B7', 'E', ['E minor pentatonic'], 1],
+  ['Am Dm E7', 'Am', ['A harmonic minor'], 2],
+  ['Dm7 G7 Cmaj7', 'C', ['C major'], 2],
+  ['G C D', 'G', ['G major pentatonic', 'G major'], 3],
+];
+for (const [text, keyName, expected, n] of SUGGEST) {
+  for (let shift = 0; shift < 12; shift++) {
+    const chords = transposeText(text, shift);
+    const key = detectKeys(chords)[0];
+    const top = suggestScales(chords, key, { limit: n });
+    // Compare by pitch-class set + type, so enharmonic naming can't cause false failures.
+    const want = expected.map(e => {
+      const [root, ...rest] = e.split(' ');
+      const t = SCALE_TYPES.find(s => s.name === rest.join(' '));
+      return makeScale(mod12(getChord(root).rootPc + shift), t).mask;
+    });
+    const got = top.map(s => s.mask);
+    const missing = want.filter(m => !got.includes(m));
+    if (missing.length) { check(`${text} (+${shift}): top ${n} include ${expected.join(', ')}`, false, top.map(s => s.name).join(' | ')); break; }
+    if (shift === 11) check(`${text}: top ${n} include ${expected.join(', ')} in all 12 keys`, true);
+  }
+}
+// One-note fixes for chords outside the scale.
+const FIXES = [
+  ['Dm7 G7 Cmaj7 A7', 'A7', 'mixolydian b6', 'C#'],
+  ['C E7 Am F', 'E7', 'phrygian dominant', 'G#'],
+  ['Dm C Bb A7', 'A7', 'phrygian dominant', 'C#'],
+];
+for (const [text, chordSym, scaleName, added] of FIXES) {
+  const chords = chordsOf(text);
+  const key = detectKeys(chords)[0];
+  const main = suggestScales(chords, key, { limit: 6 }).find(s => s.type.size === 7);
+  const entry = main.perChord.find(p => p.chord === chordSym);
+  const alt = entry?.alternative;
+  check(`${text}: fix for ${chordSym} is ${scaleName} (${added})`, alt && alt.name.endsWith(scaleName) && eq(alt.added, [added]),
+    alt ? `${alt.name}, adds ${alt.added}` : 'no alternative offered');
+}
+
+// ===========================================================================
+suite('Roman numerals');
+const MAJOR_TRIADS = [[0, 'maj', 'I'], [2, 'min', 'ii'], [4, 'min', 'iii'], [5, 'maj', 'IV'], [7, 'maj', 'V'], [9, 'min', 'vi'], [11, 'dim', 'vii°']];
+const MAJOR_SEVENTHS = [[0, 'maj7', 'Imaj7'], [2, 'm7', 'ii7'], [4, 'm7', 'iii7'], [5, 'maj7', 'IVmaj7'], [7, '7', 'V7'], [9, 'm7', 'vi7'], [11, 'm7b5', 'viiø7']];
+const MINOR_TRIADS = [[0, 'min', 'i'], [2, 'dim', 'ii°'], [3, 'maj', 'III'], [5, 'min', 'iv'], [7, 'min', 'v'], [8, 'maj', 'VI'], [10, 'maj', 'VII'], [7, 'maj', 'V'], [11, 'dim', 'vii°']];
+const MINOR_SEVENTHS = [[0, 'm7', 'i7'], [2, 'm7b5', 'iiø7'], [3, 'maj7', 'IIImaj7'], [5, 'm7', 'iv7'], [7, 'm7', 'v7'], [8, 'maj7', 'VImaj7'], [10, '7', 'VII7'], [7, '7', 'V7'], [11, 'dim7', 'vii°7']];
+for (const [label, table, minor] of [['major triads', MAJOR_TRIADS, false], ['major sevenths', MAJOR_SEVENTHS, false], ['minor triads', MINOR_TRIADS, true], ['minor sevenths', MINOR_SEVENTHS, true]]) {
+  const failures = [];
+  for (let t = 0; t < 12; t++) for (const [deg, type, expected] of table) {
+    const got = romanNumeral(ch(t + deg, type), t, minor);
+    if (got !== expected) failures.push(`${NAMES[t]}${minor ? 'm' : ''}: ${ch(t + deg, type).symbol} → ${got} (expected ${expected})`);
+  }
+  check(`diatonic ${label} in all 12 keys`, !failures.length, failures.slice(0, 4).join('; '));
+}
+// Chromatic chords in C major.
+const CHROMATIC = [['Bb', 'bVII'], ['Ab', 'bVI'], ['Eb', 'bIII'], ['Fm', 'iv'], ['Db', 'bII'], ['D7', 'II7'], ['E7', 'III7'], ['F#dim', '#iv°']];
+for (const [sym, expected] of CHROMATIC) {
+  const got = romanNumeral(getChord(sym), 0, false);
+  check(`${sym} in C is ${expected}`, got === expected, got);
+}
+// Inversions (figured bass).
+const INV = [['C/E', 'I⁶'], ['C/G', 'I⁶₄'], ['G7/B', 'V⁶₅'], ['G7/D', 'V⁴₃'], ['G7/F', 'V⁴₂'], ['Am/C', 'vi⁶'], ['C/D', 'I/II'], ['F/G', 'IV/V']];
+for (const [sym, expected] of INV) {
+  const got = romanNumeral(getChord(sym), 0, false);
+  check(`${sym} in C is ${expected}`, got === expected, got);
+}
+
+// ===========================================================================
+suite('Chord roles');
+{
+  const failures = [];
+  for (let t = 0; t < 12; t++) {
+    // Secondary dominant followed by its target: V7/ii, V7/iii, V7/IV, V7/V, V7/vi.
+    for (const [targetDeg, targetType, label] of [[2, 'min', 'V7/ii'], [4, 'min', 'V7/iii'], [5, 'maj', 'V7/IV'], [7, 'maj', 'V7/V'], [9, 'min', 'V7/vi']]) {
+      const chords = [ch(t, 'maj'), ch(t + targetDeg + 7, '7'), ch(t + targetDeg, targetType), ch(t + 7, '7'), ch(t, 'maj')];
+      const a = analyzeProgression(chords, { key: { tonicPc: t, minor: false }, loop: false });
+      const s = a.steps[1];
+      if (s.kind !== 'secondary' || s.label !== label || !/resolves/.test(s.note)) failures.push(`${NAMES[t]}: ${chords[1].symbol} → ${s.kind} ${s.label}`);
+    }
+    // Borrowed from the parallel minor.
+    for (const [deg, type] of [[5, 'min'], [8, 'maj'], [10, 'maj'], [3, 'maj']]) {
+      const a = analyzeProgression([ch(t, 'maj'), ch(t + deg, type), ch(t, 'maj')], { key: { tonicPc: t, minor: false }, loop: false });
+      if (a.steps[1].kind !== 'borrowed') failures.push(`${NAMES[t]}: ${a.steps[1].symbol} not borrowed (${a.steps[1].kind})`);
+    }
+    // Functions of the diatonic triads.
+    const fns = MAJOR_TRIADS.map(([deg, type]) => analyzeProgression([ch(t + deg, type)], { key: { tonicPc: t, minor: false } }).steps[0].fn).join('');
+    if (fns !== 'TSTSDTD') failures.push(`${NAMES[t]} functions ${fns}`);
+  }
+  check('secondary dominants (with resolution), borrowed chords and functions in all 12 keys', !failures.length, failures.slice(0, 4).join('; '));
+  // Tritone substitution, borrowed major IV in minor, non-resolving secondary dominant (all 12 keys).
+  const special = [];
+  for (let sft = 0; sft < 12; sft++) {
+    const ipa = analyzeProgression(transposeText('Fmaj7 G7 Gm7 Gb7 Fmaj7', sft), { loop: false });
+    if (ipa.steps[3].label !== 'subV7/I') special.push(`+${sft} Gb7 → ${ipa.steps[3].label ?? ipa.steps[3].kind}`);
+    const hc = analyzeProgression(transposeText('Bm F# A E G D Em F#', sft), { loop: true });
+    if (hc.steps[3].kind !== 'borrowed') special.push(`+${sft} E in Bm → ${hc.steps[3].kind} ${hc.steps[3].label ?? ''}`);
+    const creep = analyzeProgression(transposeText('G B C Cm', sft), { loop: true });
+    if (creep.steps[1].label !== 'V/vi' || creep.steps[3].kind !== 'borrowed') special.push(`+${sft} Creep → ${creep.steps.map(x => x.label ?? x.numeral).join(' ')}`);
+  }
+  check('tritone substitute (subV7/I), borrowed major IV in minor, V/vi and borrowed iv in all 12 keys', !special.length, special.slice(0, 4).join('; '));
+  // A ii–V–I that steps outside the key is a brief key change, in all 12 keys.
+  const mod = [];
+  for (let sft = 0; sft < 12; sft++) {
+    const bb = analyzeProgression(transposeText('Cm7 Fm7 Dm7b5 G7 Cm7 Ebm7 Ab7 Dbmaj7', sft), { loop: false });
+    const [ii, v, i] = bb.steps.slice(5);
+    if (ii.label !== 'ii7/bII' || v.label !== 'V7/bII' || i.kind !== 'tonicized') {
+      mod.push(`+${sft}: ${bb.steps.slice(5).map(x => `${x.symbol}=${x.label ?? x.kind}`).join(' ')}`);
+    }
+    // The same chord type a half step up is a parallel move, not a resolution.
+    const sw = analyzeProgression(transposeText('Dm7 Ebm7 Dm7', sft), { loop: true });
+    if (!/parallel move/.test(sw.steps[1].note ?? '')) mod.push(`+${sft}: So What → ${sw.steps[1].note}`);
+  }
+  check('ii–V–I into another key, and parallel chord shifts, in all 12 keys', !mod.length, mod.slice(0, 4).join('; '));
+  const blues = analyzeProgression(chordsOf('A7 D7 A7 E7'), {});
+  check('blues I7 and IV7 are not called secondary dominants', blues.steps.every(s => s.kind === 'diatonic'), blues.steps.map(s => s.kind).join(','));
+}
+
+// ===========================================================================
+suite('Root motion');
+const MOTIONS = [['C', 'F', 'up a 4th', 'strong'], ['C', 'G', 'down a 4th', 'plagal'], ['C', 'D', 'up a whole step', 'step'],
+  ['C', 'Bb', 'down a whole step', 'step'], ['C', 'Am', 'down a minor 3rd', 'third'], ['C', 'E', 'up a major 3rd', 'third'],
+  ['C', 'F#', 'a tritone', 'tritone'], ['C', 'Db', 'up a half step', 'step'], ['C', 'C7', 'same root', 'static']];
+for (const [a, b, text, strength] of MOTIONS) {
+  const m = rootMotion(getChord(a), getChord(b));
+  check(`${a} → ${b}: ${text}`, m.text === text && m.strength === strength, `${m.text} / ${m.strength}`);
+}
+
+// ===========================================================================
+suite('Named patterns');
+{
+  const PATTERN_CASES = [
+    ['Axis progression', [[0, 'maj'], [7, 'maj'], [9, 'min'], [5, 'maj']], false],
+    ['50s progression', [[0, 'maj'], [9, 'min'], [5, 'maj'], [7, 'maj']], false],
+    ['Three-chord song', [[0, 'maj'], [5, 'maj'], [7, 'maj']], false],
+    ['Turnaround', [[0, 'maj'], [9, 'min'], [2, 'min'], [7, 'maj']], false],
+    ['Mixolydian vamp', [[0, 'maj'], [10, 'maj'], [5, 'maj']], false],
+    ['Royal road', [[5, 'maj'], [7, 'maj'], [4, 'min'], [9, 'min']], false],
+    ['Andalusian cadence', [[0, 'min'], [10, 'maj'], [8, 'maj'], [7, 'maj']], true],
+    ['Epic minor loop', [[0, 'min'], [8, 'maj'], [3, 'maj'], [10, 'maj']], true],
+    ['Minor three-chord', [[0, 'min'], [5, 'min'], [7, 'maj']], true],
+  ];
+  for (const [name, seq, minor] of PATTERN_CASES) {
+    const failures = [];
+    for (let t = 0; t < 12; t++) for (let r = 0; r < seq.length; r++) {
+      const rot = [...seq.slice(r), ...seq.slice(0, r)];
+      const chords = rot.map(([d, type]) => ch(t + d, type));
+      const a = analyzeProgression(chords, { key: { tonicPc: t, minor }, loop: true });
+      if (!a.patterns.some(p => p.name === name)) failures.push(`${NAMES[t]} rotation ${r}: ${chords.map(c => c.symbol).join(' ')} → ${a.patterns.map(p => p.name).join(',') || 'none'}`);
+    }
+    check(`${name} in all keys and rotations`, !failures.length, failures.slice(0, 3).join('; '));
+  }
+  const iiVI = analyzeProgression(chordsOf('Em7 A7 Dmaj7 Bm7'), { loop: true });
+  check('ii–V–I found inside a longer progression', iiVI.patterns.some(p => p.name === 'ii–V–I'), iiVI.patterns.map(p => p.name).join(','));
+}
+
+// ===========================================================================
+suite('Cadences');
+const CAD = [['C F G C', 'authentic cadence'], ['C F C', 'plagal cadence'], ['C F G Am', 'deceptive cadence'], ['C Am F G', 'half cadence'], ['Am Dm E7 Am', 'authentic cadence'], ['Am Dm E7 F', 'deceptive cadence']];
+for (const [text, name] of CAD) {
+  const failures = [];
+  for (let s = 0; s < 12; s++) {
+    const chords = transposeText(text, s);
+    const a = analyzeProgression(chords, { loop: false });
+    if (a.cadence?.name !== name) failures.push(`+${s}: ${chords.map(c => c.symbol).join(' ')} → ${a.cadence?.name ?? 'none'} (key ${a.key.name})`);
+  }
+  check(`${text}: ${name} in all 12 keys`, !failures.length, failures.slice(0, 3).join('; '));
+}
+
+// ===========================================================================
+suite('Key detection');
+// [progression, loop, acceptable keys]. Ambiguous relative-key loops list both answers.
+const KEYS = [
+  ['C G Am F', true, ['C']], ['C Am F G', true, ['C']], ['G C D', true, ['G']], ['C F G C', false, ['C']],
+  ['Am G F G', true, ['Am']], ['Am Dm E7 Am', false, ['Am']], ['Am Dm G C', false, ['C']],
+  ['Dm7 G7 Cmaj7', true, ['C']], ['Dm7 G7 Cmaj7 A7', true, ['C']], ['Em C G D', true, ['Em', 'G']],
+  ['D A Bm G', true, ['D']], ['E7 A7 B7', true, ['E']], ['A7 D7 A7 E7 D7 A7', true, ['A']],
+  ['Am G F E', true, ['Am']], ['Cm Ab Bb Cm', false, ['Cm']], ['Cm Fm G7 Cm', false, ['Cm']],
+  ['F Bb C F', false, ['F']], ['Bb F Gm Eb', true, ['Bb']], ['C Bb F C', false, ['C']], ['G F C G', false, ['G']],
+  ['Dm Bb F C', true, ['Dm', 'F']], ['C E7 Am F Fm C', false, ['C']], ['Em Am B7 Em', false, ['Em']],
+  ['F#m D A E', true, ['F#m', 'A']], ['Bm G D A', true, ['Bm', 'D']], ['C Dm Em F G Am Bdim C', false, ['C']],
+  ['C G/B Am G F C/E Dm G', true, ['C']], ['Gm Cm D7 Gm', false, ['Gm']], ['C C7 F Fm C', false, ['C']],
+  ['Am F C G', true, ['Am', 'C']],
+];
+for (const [text, loop, accept] of KEYS) {
+  const failures = [];
+  for (let s = 0; s < 12; s++) {
+    const chords = transposeText(text, s);
+    const k = detectKeys(chords, { loop })[0];
+    const ok = accept.some(a => { const c = getChord(a); return mod12(c.rootPc + s) === k.tonicPc && (c.type === 'min') === k.minor; });
+    if (!ok) failures.push(`+${s}: ${chords.map(c => c.symbol).join(' ')} → ${k.name}`);
+  }
+  check(`${text} → ${accept.join(' or ')} (all 12 keys)`, !failures.length, failures.slice(0, 3).join('; '));
+}
+
+export default results;

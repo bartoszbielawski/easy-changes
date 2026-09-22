@@ -1,0 +1,23 @@
+{
+  "$comment": "Scales as scale degrees from the root. 'family' groups them for display; 'feel' is a short description for players. Order is the naming priority when several scales share the same notes (e.g. C major = A minor = D dorian).",
+  "types": [
+    { "id": "major",             "name": "major",              "family": "diatonic",   "degrees": ["1", "2", "3", "4", "5", "6", "7"],             "feel": "bright, the default for major keys" },
+    { "id": "minor",             "name": "natural minor",      "family": "diatonic",   "degrees": ["1", "2", "b3", "4", "5", "b6", "b7"],          "feel": "dark, the default for minor keys" },
+    { "id": "major-pentatonic",  "name": "major pentatonic",   "family": "pentatonic", "degrees": ["1", "2", "3", "5", "6"],                       "feel": "open and safe, country and pop" },
+    { "id": "minor-pentatonic",  "name": "minor pentatonic",   "family": "pentatonic", "degrees": ["1", "b3", "4", "5", "b7"],                     "feel": "the rock and blues workhorse" },
+    { "id": "blues",             "name": "blues",              "family": "blues",      "degrees": ["1", "b3", "4", "b5", "5", "b7"],               "feel": "minor pentatonic plus the gritty b5" },
+    { "id": "major-blues",       "name": "major blues",        "family": "blues",      "degrees": ["1", "2", "b3", "3", "5", "6"],                 "feel": "major pentatonic plus a bluesy b3" },
+    { "id": "dorian",            "name": "dorian",             "family": "diatonic",   "degrees": ["1", "2", "b3", "4", "5", "6", "b7"],           "feel": "minor with a brighter 6th, funk and jazz" },
+    { "id": "mixolydian",        "name": "mixolydian",         "family": "diatonic",   "degrees": ["1", "2", "3", "4", "5", "6", "b7"],            "feel": "major with a flat 7th, for dominant chords and rock" },
+    { "id": "lydian",            "name": "lydian",             "family": "diatonic",   "degrees": ["1", "2", "3", "#4", "5", "6", "7"],            "feel": "dreamy major with a raised 4th" },
+    { "id": "phrygian",          "name": "phrygian",           "family": "diatonic",   "degrees": ["1", "b2", "b3", "4", "5", "b6", "b7"],         "feel": "dark minor with a flat 2nd, Spanish and metal" },
+    { "id": "harmonic-minor",    "name": "harmonic minor",     "family": "minor",      "degrees": ["1", "2", "b3", "4", "5", "b6", "7"],           "feel": "minor with a leading tone, classical and neo-classical" },
+    { "id": "melodic-minor",     "name": "melodic minor",      "family": "minor",      "degrees": ["1", "2", "b3", "4", "5", "6", "7"],            "feel": "jazz minor, smooth and modern" },
+    { "id": "phrygian-dominant", "name": "phrygian dominant",  "family": "minor",      "degrees": ["1", "b2", "3", "4", "5", "b6", "b7"],          "feel": "the V chord of a minor key, flamenco and klezmer" },
+    { "id": "mixolydian-b6",     "name": "mixolydian b6",      "family": "minor",      "degrees": ["1", "2", "3", "4", "5", "b6", "b7"],          "feel": "dominant with a flat 6th, for a V7 borrowed from a minor key" },
+    { "id": "lydian-dominant",   "name": "lydian dominant",    "family": "minor",      "degrees": ["1", "2", "3", "#4", "5", "6", "b7"],           "feel": "dominant with a raised 4th, jazz and film" },
+    { "id": "locrian",           "name": "locrian",            "family": "diatonic",   "degrees": ["1", "b2", "b3", "4", "b5", "b6", "b7"],        "feel": "unstable, for half-diminished chords" },
+    { "id": "whole-tone",        "name": "whole tone",         "family": "symmetric",  "degrees": ["1", "2", "3", "#4", "#5", "b7"],               "feel": "floating, for augmented dominant chords" },
+    { "id": "diminished-hw",     "name": "half-whole diminished", "family": "symmetric", "degrees": ["1", "b2", "b3", "3", "#4", "5", "6", "b7"], "feel": "tense, for 7b9 and diminished sounds" }
+  ]
+}

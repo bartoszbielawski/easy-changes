@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chord Finder Tests</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .t-summary { font-size: 1.1rem; margin: 0 0 16px; }
+    .t-suite { margin: 18px 0 6px; font-size: 1rem; }
+    .t-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 0.88rem; }
+    .t-list li { display: grid; grid-template-columns: 1.5em minmax(0, 1fr); gap: 6px; }
+    .t-pass::before { content: "✓"; color: var(--easy); }
+    .t-fail::before { content: "✗"; color: var(--hard); font-weight: 700; }
+    .t-detail { display: block; color: var(--hard); font-size: 0.8rem; word-break: break-word; }
+  </style>
+</head>
+<body>
+  <header><h1>Chord Finder tests</h1><nav><a href="../index.html">Chords</a><a href="../progression.html">Progression</a></nav></header>
+  <main><p class="t-summary" id="summary">Running…</p><div id="out"></div></main>
+  <script type="module">
+    const $ = s => document.querySelector(s);
+    try {
+      const { default: results } = await import('./tests.js');
+      window.testResults = results;
+      const failed = results.filter(r => !r.ok);
+      $('#summary').textContent = `${results.length - failed.length} of ${results.length} checks passed${failed.length ? ` · ${failed.length} failed` : ''}`;
+      const bySuite = Map.groupBy(results, r => r.suite);
+      $('#out').innerHTML = [...bySuite].map(([suite, rs]) => `
+        <h2 class="t-suite">${suite} <small>${rs.filter(r => r.ok).length}/${rs.length}</small></h2>
+        <ul class="t-list">${rs.map(r => `<li class="${r.ok ? 't-pass' : 't-fail'}"><span>${r.name}${r.detail ? `<span class="t-detail">${r.detail}</span>` : ''}</span></li>`).join('')}</ul>`).join('');
+    } catch (e) {
+      window.testResults = [{ suite: 'runner', name: 'load', ok: false, detail: String(e.stack || e) }];
+      $('#summary').textContent = 'Test run crashed: ' + e;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chord Finder</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Chord Finder</h1>
+    <nav><a href="index.html" aria-current="page">Chords</a><a href="progression.html">Progression</a></nav>
+  </header>
+
+  <main>
+    <form id="search" class="entry" autocomplete="off">
+      <label class="field wide">
+        <span>Chord</span>
+        <input id="symbol" name="symbol" placeholder="e.g. F#m7, Bbmaj7, G7/B" spellcheck="false">
+      </label>
+    </form>
+
+    <section class="pickers">
+      <div class="picker-row"><span class="row-label">Root</span><div class="picker" id="roots" role="group" aria-label="Root"></div></div>
+      <div class="picker-row"><span class="row-label">Type</span><div class="picker types" id="types" role="group" aria-label="Chord type"></div></div>
+      <div class="picker-row"><span class="row-label">Bass</span><div class="picker" id="bass" role="group" aria-label="Bass note"></div></div>
+    </section>
+
+    <section id="chord-info" aria-live="polite"></section>
+    <section id="voicings" class="voicing-grid"></section>
+  </main>
+
+  <footer>
+    <div id="legend"></div>
+    <p id="stats"></p>
+  </footer>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
