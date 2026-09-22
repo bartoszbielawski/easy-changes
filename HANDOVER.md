@@ -38,7 +38,7 @@ Both were re-run at the time of writing.
   chord-only links still open; bad values fall back to defaults. Sharps/flats stay per browser.
 - **Scales**: ranked suggestions, a per-chord breakdown with a one-note fix where a chord
   doesn't fit, and a fretboard with the easiest hand position.
-- **Song presets** (`data/songs.json`): 14 progressions, chords only, picked from a
+- **Song presets** (`data/songs.json`): 36 progressions (30 rock & pop, 6 jazz), chords only, picked from a
   dropdown grouped by style. The picker follows the chord box: it names the song while the
   chords match and resets when they are edited.
 
