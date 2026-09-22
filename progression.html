@@ -47,10 +47,14 @@
     <noscript><p class="notice">Easy Changes works out chords and voicings in your browser, so it needs JavaScript. Turn JavaScript on for this site and reload the page.</p></noscript>
     <p class="notice" id="unsupported" hidden>Easy Changes couldn't start in this browser. It needs a browser from 2021 or later: a current Chrome, Edge, Firefox or Safari will work.</p>
     <form id="prog-form" class="entry" autocomplete="off">
-      <label class="field wide">
-        <span>Chords</span>
+      <div class="field wide">
+        <!-- Not inside a <label>: a click anywhere in a label would also focus the chord box. -->
+        <div class="field-head">
+          <label for="prog">Chords</label>
+          <button type="button" class="copy-link" title="Copy a link to this progression with your settings and the chosen key or capo">Copy link</button>
+        </div>
         <input id="prog" placeholder="e.g. C G Am F  or  Bb | Gm | Eb | F" spellcheck="false" aria-describedby="prog-hint">
-      </label>
+      </div>
       <p class="hint" id="prog-hint">Chords count one bar each. To show that some last longer, add bar lines (<code>C | G Am | F</code>) or a length in bars (<code>C:2</code>).</p>
       <div class="examples" id="examples">
         <label class="song-pick"><span>Song</span>
@@ -119,9 +123,13 @@
     </section>
 
     <section id="arrangement" aria-live="polite"></section>
-    <!-- Harmony and scales explain the progression; they matter more to advanced players, so they come after what to play. -->
-    <section id="harmony" aria-live="polite"></section>
-    <section id="scales" aria-live="polite"></section>
+    <!-- Harmony and scales explain the progression; they matter more to experienced players,
+         so they come after what to play and start folded away for Beginner and Improver levels. -->
+    <details class="theory" id="theory">
+      <summary><span class="theory-title">Harmony and scales</span> <span class="hint">the theory behind these chords: the key, what each chord does, and scales to solo with</span></summary>
+      <section id="harmony" aria-live="polite"></section>
+      <section id="scales" aria-live="polite"></section>
+    </details>
   </main>
   <footer><div id="legend"></div></footer>
   <script type="module" src="js/progression-app.js"></script>

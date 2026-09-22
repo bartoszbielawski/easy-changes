@@ -36,7 +36,8 @@ Then open http://localhost:8000. You can link straight to a chord, e.g. `#F%23m7
   - each key and capo is rated by the **lowest level** it can be played at, then by **effort** relative to the top pick (+27% = about a quarter more work). The levels are bands of the 1–10 chord scale, named after the chords in them (Beginner: open C/G/D/Am; Improver: small F, B7; Intermediate: barre chords; Advanced: stretched barres)
   - the **top 3 ways to play it** for whichever key or capo you select: the easiest, plus the best way with mostly open chords, barres or up the neck, each labelled, with the chords that differ from #1 highlighted
   - **chord lengths**: `C:2` lasts two bars, and bar lines share a bar (`C | G Am` = 1, ½, ½). A long hard chord counts more than a passing one; changes cost the same either way
-  - a **shareable address**: it carries the chords, any changed settings and the chosen key or capo, so a link opens exactly what you see
+  - a **shareable address**: it carries the chords, any changed settings and the chosen key or capo, so a link opens exactly what you see; **Copy link** copies it
+  - harmony and scales come last, in a section that starts folded for Beginner and Improver levels
   - **scale suggestions** for soloing over the progression:
     - ranked by clashes (scale notes a half-step above a chord tone), coverage of the chord tones, and relevance to the key
     - blues progressions get minor pentatonic / blues, and dominant chords accept b9 / b13
@@ -78,7 +79,7 @@ Open http://localhost:8000/tests/ to run the music-theory test suite ([tests/tes
 - secondary dominants and borrowed chords
 - root motion, named patterns in every rotation, and cadences
 - key detection on 30 progressions, each transposed into all 12 keys
-- every song preset loads: all fields present and every chord recognised
+- every song preset loads: all fields present, every chord recognised, a whole number of bars, and held chords written as lengths rather than repeats
 - chord lengths: parsing, one-bar lengths leaving every score unchanged, and longer chords never lowering the effort or changing the level
 - the top 3: #1 still the cheapest, no repeats, and real alternatives for four-chord loops in every key
 

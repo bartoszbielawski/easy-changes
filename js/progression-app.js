@@ -262,6 +262,24 @@ function summarize(a) {
   return parts.join(' · ');
 }
 
+// The address already holds the whole view (see writeHash), including a key or capo chosen
+// further down; the button beside the chord box just makes it easy to share.
+async function copyLink(button) {
+  const url = location.href;
+  let ok = false;
+  try { await navigator.clipboard.writeText(url); ok = true; } catch {
+    // Older browsers, or a page not served over https: copy through a hidden text box.
+    const box = Object.assign(document.createElement('textarea'), { value: url });
+    box.style.cssText = 'position:fixed;opacity:0';
+    document.body.append(box);
+    box.select();
+    try { ok = document.execCommand('copy'); } catch { ok = false; }
+    box.remove();
+  }
+  button.textContent = ok ? 'Link copied' : 'Copy the address bar';
+  setTimeout(() => { if (button.isConnected) button.textContent = 'Copy link'; }, 2000);
+}
+
 // Tooltips for the style label on each of the top 3.
 const STYLE_TIPS = {
   open: 'Most chords in open position: frets 1-4, open strings, no full barres',
@@ -321,8 +339,14 @@ function selectOriginal() {
   renderArrangement();
 }
 
+// Harmony and scales start folded for Beginner and Improver, open for higher levels. It
+// follows the level when that changes; opening or closing it by hand works as usual.
+const LEVEL_OPENS_THEORY = new Set(['intermediate', 'advanced']);
+const syncTheory = () => { $('#theory').open = LEVEL_OPENS_THEORY.has(LEVELS[$('#max').selectedIndex].id); };
+
 $('#accidentals').value = getAccidentals();
 $('#prog-form').addEventListener('input', e => {
+  if (e.target.id === 'max') syncTheory();
   if (e.target.id === 'song') { if (e.target.value) loadProgression(SONGS[e.target.value].chords); return; }
   if (e.target.id === 'accidentals') setAccidentals(e.target.value);
   update();
@@ -330,6 +354,8 @@ $('#prog-form').addEventListener('input', e => {
 });
 $('#prog-form').addEventListener('submit', e => e.preventDefault());
 document.addEventListener('click', e => {
+  const copy = e.target.closest('button.copy-link');
+  if (copy) { copyLink(copy); return; }
   const ex = e.target.closest('[data-example]');
   if (ex) { loadProgression(ex.dataset.example); return; }
   const alt = e.target.closest('button.alt');
@@ -440,9 +466,10 @@ function applyHash() {
 }
 
 applyHash();
+syncTheory();
 // Back/forward and edits to the address change the hash without reloading; follow them.
 // (The page writes the hash with replaceState, which doesn't fire this, so there is no loop.)
-window.addEventListener('hashchange', applyHash);
+window.addEventListener('hashchange', () => { applyHash(); syncTheory(); });
 
 // Tells the guard script in the page head that everything loaded and ran.
 window.easyChangesReady = true;

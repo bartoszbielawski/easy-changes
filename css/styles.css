@@ -85,6 +85,13 @@ footer > * + * { border-top: 0; padding-top: 0; }
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
 }
 .field.wide input { height: 42px; padding: 0 12px; font-size: 1.1rem; }
+/* Label on the left, Copy link on the right, sized like the example chips so the row stays short. */
+.field-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.copy-link {
+  padding: 2px 10px; font: inherit; font-size: 0.8rem; color: var(--text);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+}
+.copy-link:hover { border-color: var(--accent); }
 .field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .field input.invalid { border-color: var(--hard); }
 
@@ -182,6 +189,12 @@ footer > * + * { border-top: 0; padding-top: 0; }
 .chord-diagram .note-name { fill: var(--muted); font-size: 10px; }
 
 /* ---- Progression page: harmony ------------------------------------------- */
+/* Folded section holding harmony and scales. */
+.theory { margin: 0 0 32px; }
+.theory > summary { cursor: pointer; padding: 10px 0; border-top: 1px solid var(--line); }
+.theory > summary .theory-title { font-size: 1.15rem; font-weight: 700; }
+.theory > summary .hint { display: inline; margin: 0 0 0 6px; }
+.theory[open] > summary { margin-bottom: 12px; }
 #harmony { margin: 0 0 28px; }
 #harmony:empty { display: none; }
 .h-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 4px; margin-top: 12px; }

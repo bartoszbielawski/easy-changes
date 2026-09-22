@@ -21,7 +21,7 @@ python tools/validate.py
 Checks the chord and scale **data**: every voicing, in every key, sounds its chord's formula
 with the right bass, and its fingering is physically possible (1049 voicings, 18 scales).
 
-Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 147 checks).
+Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 149 checks).
 Expected values are written out from theory, not computed by the code under test, and most
 checks run in all 12 keys. Add a case there whenever you change theory behaviour.
 

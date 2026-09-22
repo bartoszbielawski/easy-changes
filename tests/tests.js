@@ -341,6 +341,13 @@ suite('Song presets');
   check(`all ${songData.songs.length} songs have a title, artist, style and chords`, !bad.length, bad.map(s => s.title).join(', '));
   const unparsed = songData.songs.map(s => [s.title, parseProgression(s.chords).errors]).filter(([, e]) => e.length);
   check('every song chord is recognised', !unparsed.length, unparsed.map(([t, e]) => `${t}: ${e.join(' ')}`).join('; '));
+  // Bar lines and lengths must add up: a song that lasts 7.5 bars has a bar line missing.
+  const ragged = songData.songs.map(s => [s.title, parseProgression(s.chords).durations.reduce((a, b) => a + b, 0)])
+    .filter(([, total]) => Math.abs(total - Math.round(total)) > 1e-9);
+  check('every song lasts a whole number of bars', !ragged.length, ragged.map(([t, n]) => `${t}: ${n}`).join('; '));
+  // A chord held longer is written C:2, not C C: the planner counts a repeat as a change.
+  const repeats = songData.songs.filter(s => parseProgression(s.chords).chords.some((c, i, all) => i > 0 && c.symbol === all[i - 1].symbol));
+  check('no song repeats a chord back to back (lengths are written C:2)', !repeats.length, repeats.map(s => s.title).join(', '));
 }
 
 // ===========================================================================

@@ -6,7 +6,7 @@ conventions; this file explains what exists, why it works the way it does, and w
 ## Status
 
 Everything described below is built and verified: `python tools/validate.py` passes
-(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (147 checks).
+(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (149 checks).
 Both were re-run at the time of writing.
 
 **Chords page** (`index.html`)
@@ -36,9 +36,13 @@ Both were re-run at the time of writing.
 - **Shareable links**: the address holds the chords, every setting that differs from its
   default, and the chosen key or capo (`#chords=C+G+Am+F&level=beginner&capo=3`). Old
   chord-only links still open; bad values fall back to defaults. Sharps/flats stay per browser.
+  A **Copy link** button sits above the chord box, right of its label.
+- **Harmony and scales** sit below the voicings in one fold-out section, closed for Beginner
+  and Improver, open for Intermediate and Advanced; it follows the level when that changes.
 - **Scales**: ranked suggestions, a per-chord breakdown with a one-note fix where a chord
   doesn't fit, and a fretboard with the easiest hand position.
-- **Song presets** (`data/songs.json`): 36 progressions (30 rock & pop, 6 jazz), chords only, picked from a
+- **Song presets** (`data/songs.json`): 36 progressions (30 rock & pop, 6 jazz), chords only; 18 have
+  verse + chorus and/or bar lengths (`|` bars, `||` sections, `C:2`). Picked from a
   dropdown grouped by style. The picker follows the chord box: it names the song while the
   chords match and resets when they are edited.
 
@@ -101,7 +105,9 @@ ever sounds wrong, change the constant and re-run the suite to see what it distu
   file has a `tuning` field that the code reads.
 - **Some songs have only two real approaches** (their barres already sit up the neck); the
   third slot then shows the cheapest near-variant of #1.
-- **Song presets are simplified** sections, not full arrangements, and have no lengths yet.
+- **Song presets are simplified** to their main sections; 18 of 36 are fuller, the rest are
+  one section without lengths. Key detection still reads Wish You Were Here as Em (not G)
+  and power-chord songs like Smells Like Teen Spirit as the relative major.
 - **Browser support** is 2021 on (modules, top-level await, fetch), tested only in current
   Chrome; older browsers get a message instead of a blank page.
 
@@ -114,7 +120,7 @@ Likely next steps, roughly in order of value:
 3. Audio playback of a voicing, an arrangement or a scale (Web Audio, no library).
 4. Works offline / installable (manifest + service worker).
 5. Alternative tunings and capo-aware chord naming on the Chords page.
-6. Lengths for the song presets.
+6. Verse/chorus and lengths for the remaining presets; power-chord key detection.
 
 The project is a local git repository (branch `main`, pushed to
 github.com/bartoszbielawski/easy-changes), started from this state.
