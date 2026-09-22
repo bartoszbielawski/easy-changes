@@ -1,4 +1,4 @@
-import { parseProgression, rankOptions, arrangeTop, guessKey, keyName } from './progression.js';
+import { parseProgression, rankOptions, arrangeChoices, guessKey, keyName } from './progression.js';
 import { renderDiagram } from './diagram.js';
 import { LEVELS, levelFor } from './difficulty.js';
 import { renderLegend } from './legend.js';
@@ -7,7 +7,10 @@ import { getChord } from './chords.js';
 import { suggestScales, scalePositions, handFretOf, makeScale } from './scales.js';
 import { renderFretboard } from './fretboard.js';
 import { analyzeProgression, FUNCTION_NAMES } from './analysis.js';
-import songData from '../data/songs.json' with { type: 'json' };
+import { loadJson } from './data.js';
+import { parseNote } from './theory.js';
+
+const songData = await loadJson('songs.json');
 
 const $ = sel => document.querySelector(sel);
 const EXAMPLES = ['C G Am F', 'Bb Gm Eb F', 'F#m D A E', 'Dm7 G7 Cmaj7 A7', 'Ab Fm Db Eb', 'Em C G D'];
@@ -57,7 +60,18 @@ function readOptions() {
     inversions: $('#inversions').checked,
     loop: $('#loop').checked,
     accidentals: $('#accidentals').value,
+    durations: parseProgression($('#prog').value).durations,
   };
+}
+
+// "2 bars", "½ bar", "1½ bars" for a length in bars.
+const FRACTIONS = { 0.25: '¼', 0.5: '½', 0.75: '¾' };
+function barsLabel(d) {
+  const whole = Math.floor(d), frac = Math.round((d - whole) * 100) / 100;
+  const third = Math.abs(frac - 1 / 3) < 0.01 ? '⅓' : Math.abs(frac - 2 / 3) < 0.01 ? '⅔' : null;
+  const text = frac === 0 ? String(whole)
+    : (FRACTIONS[frac] ?? third) ? `${whole || ''}${FRACTIONS[frac] ?? third}` : fmt1(d);
+  return `${text} bar${d > 1 ? 's' : ''}`;
 }
 
 const fmt1 = x => (Math.round(x * 10) / 10).toString();
@@ -106,6 +120,7 @@ function renderRankings() {
 }
 
 function renderArrangement() {
+  writeHash();
   const opt = result[selected.list].find(o => isSelected(o, selected.list));
   const title = selected.list === 'keys'
     ? `In ${opt.key}${opt.shift ? ` (${opt.shift > 0 ? 'up' : 'down'} ${Math.abs(opt.shift)} semitone${Math.abs(opt.shift) > 1 ? 's' : ''})` : ''}`
@@ -115,7 +130,7 @@ function renderArrangement() {
     $('#scales').innerHTML = '';
     return;
   }
-  const alts = arrangeTop(opt.chords, readOptions(), 3);
+  const alts = arrangeChoices(opt.chords, readOptions(), 3);
   if (altIndex >= alts.length) altIndex = 0;
   const a = alts[altIndex];
   const best = alts[0];
@@ -127,7 +142,10 @@ function renderArrangement() {
     <ol class="alts" aria-label="Best voicing combinations">
       ${alts.map((alt, k) => `<li><button type="button" class="alt" data-alt="${k}" aria-pressed="${k === altIndex}">
         <span class="alt-rank">#${k + 1}</span>
-        <span class="alt-tabs">${alt.steps.map((s, i) => `<span class="${k > 0 && differs(alt, i) ? 'diff' : ''}" title="${s.played}">${s.voicing.tab}</span>`).join('')}</span>
+        <span class="alt-main">
+          <span class="alt-style" title="${STYLE_TIPS[alt.style.id]}">${alt.style.name}</span>
+          <span class="alt-tabs">${alt.steps.map((s, i) => `<span class="${k > 0 && differs(alt, i) ? 'diff' : ''}" title="${s.played}">${s.voicing.tab}</span>`).join('')}</span>
+        </span>
         <span class="alt-cost">${levelBadge(alt.maxDifficulty)} <span class="effort" title="Total effort ${alt.cost.toFixed(1)}">${k === 0 ? 'best' : relEffort(alt.cost, best.cost).replace('easiest', 'same')}</span></span>
       </button></li>`).join('')}
     </ol>
@@ -135,7 +153,7 @@ function renderArrangement() {
     <div class="sequence">${a.steps.map((s, i) => `
       ${i > 0 ? moveLabel(s.move) : ''}
       <figure class="voicing${altIndex > 0 && differs(a, i) ? ' differs' : ''}">
-        <div class="step-name">${s.played}${s.played !== s.input ? ` <small>${s.how === 'inversion' ? 'inversion of' : 'for'} ${s.input}</small>` : ''}</div>
+        <div class="step-name">${s.played}${s.played !== s.input ? ` <small>${s.how === 'inversion' ? 'inversion of' : 'for'} ${s.input}</small>` : ''}${s.duration !== 1 ? ` <small class="bars" title="Lasts ${barsLabel(s.duration)}. Changing chords costs the same however long a chord lasts, but holding a grip is work too: this one counts ${s.heldEffort >= 0 ? `${fmt1(s.heldEffort)} more` : `${fmt1(-s.heldEffort)} less`} than a one-bar chord.">${barsLabel(s.duration)}</small>` : ''}</div>
         ${sounding ? `<div class="sounds">sounds ${sounding[i].symbol}</div>` : ''}
         ${renderDiagram(s.voicing)}
         <figcaption>
@@ -244,6 +262,14 @@ function summarize(a) {
   return parts.join(' · ');
 }
 
+// Tooltips for the style label on each of the top 3.
+const STYLE_TIPS = {
+  open: 'Most chords in open position: frets 1-4, open strings, no full barres',
+  barre: 'Most chords are barre shapes, which move to any key unchanged',
+  neck: 'Most chords from the 5th fret up, where the hand can stay in one place',
+  mixed: 'A mix of open chords, barres and higher positions',
+};
+
 const MOVE_TEXT = { stay: 'stay', slide: 'slide', partial: 'shift', regrip: 'change' };
 
 function moveLabel(m) {
@@ -256,7 +282,7 @@ function moveLabel(m) {
 
 function update() {
   const text = $('#prog').value;
-  history.replaceState(null, '', `#${encodeURIComponent(text)}`);
+  writeHash();
   // The picker names a song only while the chords are still that song's.
   const song = SONGS.findIndex(s => chordKey(s.chords) === chordKey(text));
   $('#song').value = song < 0 ? '' : String(song);
@@ -326,18 +352,97 @@ document.addEventListener('click', e => {
 });
 
 $('#legend').innerHTML = renderLegend({ effort: true });
-// The address carries the current chord text. A hand-edited address can hold a stray '%',
-// which decodeURIComponent rejects, so fall back to nothing rather than break the page.
-function hashText() {
-  try { return decodeURIComponent(location.hash.slice(1)); } catch { return ''; }
+
+// ---- Shareable address ------------------------------------------------------------
+// The address holds the chords, every setting that differs from its default, and the
+// chosen key or capo, so a shared link opens the view it was copied from:
+//   #chords=C+G+Am+F&level=beginner&barres=easy&capo=3
+// Older links held only the chord text (#C%20G%20Am%20F); those still open, with
+// default settings. Sharps/flats stay a per-browser preference and aren't included.
+
+// Values from a link are untrusted: anything a control can't hold keeps its default.
+const textField = sel => ({ get: () => $(sel).value, set: v => { $(sel).value = v; } });
+const choice = sel => ({
+  get: () => $(sel).value,
+  set: v => { if ([...$(sel).options].some(o => o.value === v)) $(sel).value = v; },
+});
+const number = (sel, min, max) => ({
+  get: () => $(sel).value,
+  set: v => { if (/^\d+$/.test(v) && Number(v) >= min && Number(v) <= max) $(sel).value = v; },
+});
+const box = sel => ({ get: () => ($(sel).checked ? '1' : '0'), set: v => { $(sel).checked = v === '1'; } });
+const SETTINGS = {
+  level: {
+    get: () => LEVELS[$('#max').selectedIndex].id,
+    set: v => { const i = LEVELS.findIndex(l => l.id === v); if (i >= 0) $('#max').selectedIndex = i; },
+  },
+  barres: choice('#barres'),
+  avoid: textField('#avoid'),
+  maxcapo: number('#max-capo', 0, 11),
+  key: {
+    // Named in the link ("Am"), stored in the picker as pitch class + minor flag ("9m").
+    get: () => { const k = $('#key').value; return !k || k === 'auto' ? 'auto' : keyName(parseInt(k, 10), k.endsWith('m')); },
+    set: v => {
+      const m = /^([A-G][#b]?)(m?)$/.exec(v);
+      const note = m && parseNote(m[1]);
+      $('#key').value = note ? `${note.pc}${m[2]}` : 'auto';
+    },
+  },
+  simpler: box('#simplify'),
+  inversions: box('#inversions'),
+  repeat: box('#loop'),
+};
+// Read before any link is applied, so these are the page's own defaults.
+const DEFAULTS = Object.fromEntries(Object.entries(SETTINGS).map(([name, s]) => [name, s.get()]));
+
+// Keep the address readable: spaces as '+', and / : | , as they are.
+const enc = v => encodeURIComponent(v).replace(/%20/g, '+').replace(/%(2F|3A|7C|2C)/gi, decodeURIComponent);
+
+function writeHash() {
+  const parts = [`chords=${enc($('#prog').value)}`];
+  for (const [name, s] of Object.entries(SETTINGS)) {
+    const v = s.get();
+    if (v !== DEFAULTS[name]) parts.push(`${name}=${enc(v)}`);
+  }
+  if (result && selected.list === 'capos') parts.push(`capo=${selected.capo}`);
+  else if (result && selected.shift) parts.push(`shift=${selected.shift}`);
+  history.replaceState(null, '', `#${parts.join('&')}`);
 }
 
-$('#prog').value = hashText() || 'C G Am F';
-update();
-if (result) selectOriginal();
+function readHash() {
+  const raw = location.hash.slice(1);
+  if (/(^|&)chords=/.test(raw)) return new URLSearchParams(raw);
+  // An old link: the whole hash is chord text. A hand-edited one can hold a stray '%',
+  // which decodeURIComponent rejects; fall back to nothing rather than break the page.
+  let chords = '';
+  try { chords = decodeURIComponent(raw); } catch { /* keep '' */ }
+  return new URLSearchParams({ chords });
+}
+
+function applyHash() {
+  const params = readHash();
+  fillKeySelect(null); // the key picker needs its options before a key can be chosen
+  for (const [name, s] of Object.entries(SETTINGS)) {
+    s.set(DEFAULTS[name]);
+    if (params.has(name)) s.set(params.get(name));
+  }
+  $('#prog').value = params.get('chords') || 'C G Am F';
+  update();
+  if (!result) return;
+  const capo = params.get('capo'), shift = Number(params.get('shift') ?? 0);
+  const want = capo !== null ? { list: 'capos', shift: 0, capo: Number(capo) } : { list: 'keys', shift };
+  const found = result[want.list].some(o => (want.list === 'keys' ? o.shift === want.shift : o.capo === want.capo));
+  if (!found) { selectOriginal(); return; }
+  selected = want;
+  altIndex = scaleIndex = positionIndex = 0;
+  renderRankings();
+  renderArrangement();
+}
+
+applyHash();
 // Back/forward and edits to the address change the hash without reloading; follow them.
-// (update() writes the hash with replaceState, which doesn't fire this, so there is no loop.)
-window.addEventListener('hashchange', () => {
-  const text = hashText();
-  if (text && text !== $('#prog').value) loadProgression(text);
-});
+// (The page writes the hash with replaceState, which doesn't fire this, so there is no loop.)
+window.addEventListener('hashchange', applyHash);
+
+// Tells the guard script in the page head that everything loaded and ran.
+window.easyChangesReady = true;

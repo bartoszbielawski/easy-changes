@@ -4,8 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Easy Changes</title>
+  <meta name="description" content="Look up any guitar chord and see every way to play it, including inversions and slash chords, sorted from easiest to hardest.">
+  <!-- Link previews (chat apps, social sites) need absolute URLs and a PNG, not SVG. -->
+  <meta property="og:site_name" content="Easy Changes">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Easy Changes: guitar chords made easy">
+  <meta property="og:description" content="Look up any guitar chord and see every way to play it, including inversions and slash chords, sorted from easiest to hardest.">
+  <meta property="og:url" content="https://bartoszbielawski.github.io/easy-changes/">
+  <meta property="og:image" content="https://bartoszbielawski.github.io/easy-changes/img/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="An orange guitar pick with an arrow, next to the words Easy Changes">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="preload" href="data/chord-types.json" as="fetch" crossorigin>
+  <link rel="preload" href="data/guitar-voicings.json" as="fetch" crossorigin>
+  <script>
+    // If this browser can't run the page's modules (older than 2021), or a data file
+    // fails to download, the modules fail silently and the page stays empty. Their
+    // errors still reach window, so show a message instead. Plain ES5 on purpose.
+    window.showUnsupported = function () {
+      var note = document.getElementById('unsupported');
+      if (window.easyChangesReady || !note) return;
+      document.documentElement.className += ' unsupported';
+      note.hidden = false;
+    };
+    window.addEventListener('error', window.showUnsupported);
+  </script>
   <noscript><style>main > :not(noscript), footer { display: none !important; }</style></noscript>
 </head>
 <body>
@@ -15,7 +42,8 @@
   </header>
 
   <main>
-    <noscript><p class="noscript">Easy Changes works out chords and voicings in your browser, so it needs JavaScript. Turn JavaScript on for this site and reload the page.</p></noscript>
+    <noscript><p class="notice">Easy Changes works out chords and voicings in your browser, so it needs JavaScript. Turn JavaScript on for this site and reload the page.</p></noscript>
+    <p class="notice" id="unsupported" hidden>Easy Changes couldn't start in this browser. It needs a browser from 2021 or later: a current Chrome, Edge, Firefox or Safari will work.</p>
     <form id="search" class="entry" autocomplete="off">
       <label class="field wide">
         <span>Chord</span>
@@ -38,5 +66,6 @@
     <p id="stats"></p>
   </footer>
   <script type="module" src="js/app.js"></script>
+  <script nomodule>window.showUnsupported();</script>
 </body>
 </html>

@@ -8,7 +8,7 @@ Working on the code? Start with [CLAUDE.md](CLAUDE.md) (commands, conventions, g
 
 ## Run
 
-ES modules and JSON imports need a local server (they don't load from `file://`):
+ES modules and the data files need a local server (they don't load from `file://`):
 
 ```
 python -m http.server 8000
@@ -34,7 +34,9 @@ Then open http://localhost:8000. You can link straight to a chord, e.g. `#F%23m7
   - a **Barre chords** setting (avoid / normal / easy for me) to match the player
   - a **My level** setting (Beginner / Improver / Intermediate / Advanced) that caps the chords used
   - each key and capo is rated by the **lowest level** it can be played at, then by **effort** relative to the top pick (+27% = about a quarter more work). The levels are bands of the 1–10 chord scale, named after the chords in them (Beginner: open C/G/D/Am; Improver: small F, B7; Intermediate: barre chords; Advanced: stretched barres)
-  - the **top 3 voicing combinations** for whichever key or capo you select, with the chords that differ from #1 highlighted
+  - the **top 3 ways to play it** for whichever key or capo you select: the easiest, plus the best way with mostly open chords, barres or up the neck, each labelled, with the chords that differ from #1 highlighted
+  - **chord lengths**: `C:2` lasts two bars, and bar lines share a bar (`C | G Am` = 1, ½, ½). A long hard chord counts more than a passing one; changes cost the same either way
+  - a **shareable address**: it carries the chords, any changed settings and the chosen key or capo, so a link opens exactly what you see
   - **scale suggestions** for soloing over the progression:
     - ranked by clashes (scale notes a half-step above a chord tone), coverage of the chord tones, and relevance to the key
     - blues progressions get minor pentatonic / blues, and dominant chords accept b9 / b13
@@ -54,6 +56,7 @@ Then open http://localhost:8000. You can link straight to a chord, e.g. `#F%23m7
 | `data/scales.json` | 18 scales as degree formulas, with a short description of each |
 | `data/songs.json` | Song presets for the planner: `title`, `by`, `style` (groups the dropdown) and `chords` as typed |
 | `tools/validate.py` | Checks every voicing in every key against its formula, plus fingering sanity |
+| `tools/make_images.py` | Draws the link-preview card and home-screen icon (PNG) from the logo's shapes |
 
 Frets and fingers are written from the low E string to the high e string: `x` = muted, `0` = open.
 Movable shapes are written relative to their lowest fret, with `rootString` marking the string that carries the root.
@@ -76,6 +79,8 @@ Open http://localhost:8000/tests/ to run the music-theory test suite ([tests/tes
 - root motion, named patterns in every rotation, and cadences
 - key detection on 30 progressions, each transposed into all 12 keys
 - every song preset loads: all fields present and every chord recognised
+- chord lengths: parsing, one-bar lengths leaving every score unchanged, and longer chords never lowering the effort or changing the level
+- the top 3: #1 still the cheapest, no repeats, and real alternatives for four-chord loops in every key
 
 ## Library (`js/`)
 

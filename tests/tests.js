@@ -2,11 +2,13 @@
 // from music theory, not computed by the code under test. Most checks run in all 12 keys.
 import { getChord, rootName } from '../js/chords.js';
 import { mod12 } from '../js/theory.js';
-import { parseProgression, transposeChords } from '../js/progression.js';
+import { parseProgression, transposeChords, arrange, arrangeChoices, DEFAULT_OPTIONS } from '../js/progression.js';
 import { SCALE_TYPES, makeScale, fitOverChord, suggestScales, scalePositions } from '../js/scales.js';
 import { analyzeProgression, detectKeys, romanNumeral, rootMotion } from '../js/analysis.js';
 import { TUNING } from '../js/chords.js';
-import songData from '../data/songs.json' with { type: 'json' };
+import { loadJson } from '../js/data.js';
+
+const songData = await loadJson('songs.json');
 
 const results = [];
 let current = '';
@@ -339,6 +341,97 @@ suite('Song presets');
   check(`all ${songData.songs.length} songs have a title, artist, style and chords`, !bad.length, bad.map(s => s.title).join(', '));
   const unparsed = songData.songs.map(s => [s.title, parseProgression(s.chords).errors]).filter(([, e]) => e.length);
   check('every song chord is recognised', !unparsed.length, unparsed.map(([t, e]) => `${t}: ${e.join(' ')}`).join('; '));
+}
+
+// ===========================================================================
+suite('Chord lengths');
+// How long a chord lasts, in bars: written as C:2, or implied by bar lines.
+{
+  const LENGTHS = [
+    ['C G Am F', [1, 1, 1, 1]],             // no bar lines: one bar each
+    ['Bb | Gm | Eb | F', [1, 1, 1, 1]],     // one chord per bar
+    ['C | G Am | F', [1, 0.5, 0.5, 1]],     // two chords share a bar
+    ['C | G Am F |', [1, 1 / 3, 1 / 3, 1 / 3]],
+    ['C:2 G Am:0.5', [2, 1, 0.5]],          // explicit lengths
+    ['| C:2 G |', [2, 1]],                  // G has the bar to itself
+    ['C/G:2 D7/F#', [2, 1]],                // slash chords take lengths too
+  ];
+  for (const [text, want] of LENGTHS) {
+    const { durations, errors } = parseProgression(text);
+    check(`"${text}" lasts ${want.map(d => +d.toFixed(2)).join(', ')} bars`,
+      !errors.length && durations.length === want.length && durations.every((d, i) => Math.abs(d - want[i]) < 1e-9),
+      `got ${JSON.stringify(durations)}, errors ${JSON.stringify(errors)}`);
+  }
+  const bad = ['C:0', 'C:', 'C:x'].filter(t => parseProgression(t).errors.length !== 1);
+  check('a zero or missing length is reported, not guessed', !bad.length, bad.join(', '));
+
+  // Lengths of one bar change nothing: old progressions keep their exact scores.
+  const same = [];
+  for (const text of ['C G Am F', 'Am F C G', 'Dm7 G7 Cmaj7', 'Bm G D A', 'C G/B Am F']) {
+    for (let s = 0; s < 12; s++) {
+      const chords = transposeText(text, s);
+      const plain = arrange(chords).cost, ones = arrange(chords, { durations: chords.map(() => 1) }).cost;
+      if (Math.abs(plain - ones) > 1e-9) same.push(`${text} +${s}: ${plain} vs ${ones}`);
+    }
+  }
+  check('one-bar lengths leave every score unchanged (5 progressions, 12 keys)', !same.length, same.slice(0, 3).join('; '));
+
+  // A chord held on its own: each bar beyond the first adds `sustain` of its difficulty.
+  const held = [];
+  for (const type of ['maj', 'min', '7', 'm7', 'maj7']) {
+    for (let pc = 0; pc < 12; pc++) {
+      const c = [ch(pc, type)];
+      const one = arrange(c).cost, three = arrange(c, { durations: [3] }).cost;
+      if (Math.abs(three - one * (1 + 2 * DEFAULT_OPTIONS.sustain)) > 1e-9) held.push(`${c[0].symbol}: ${one} → ${three}`);
+    }
+  }
+  check(`three bars of a chord count ${1 + 2 * DEFAULT_OPTIONS.sustain}× one bar (5 types, 12 roots)`, !held.length, held.slice(0, 3).join('; '));
+
+  // Holding a chord longer never makes the progression easier, and never changes the
+  // level it needs: the level is set by the hardest chord, however long it lasts.
+  const worse = [];
+  for (let s = 0; s < 12; s++) {
+    const chords = transposeText('C G Am F', s), base = arrange(chords);
+    chords.forEach((c, i) => {
+      const a = arrange(chords, { durations: chords.map((_, j) => (j === i ? 4 : 1)) });
+      if (a.cost < base.cost - 1e-9 || a.level !== base.level) worse.push(`+${s} ${c.symbol}:4 → ${a.cost.toFixed(2)} ${a.level} (was ${base.cost.toFixed(2)} ${base.level})`);
+    });
+  }
+  check('a longer chord never lowers the effort or changes the level (12 keys)', !worse.length, worse.slice(0, 3).join('; '));
+}
+
+// ===========================================================================
+suite('Top 3 variety');
+// The top 3 should offer different ways to play a progression, not the cheapest one
+// with a single chord swapped. #1 must still be the cheapest arrangement.
+{
+  const tabsOf = a => a.steps.map(s => s.voicing.tab + s.played);
+  const PROGS = ['C G Am F', 'Am G F G', 'Em C G D', 'Dm7 G7 Cmaj7', 'Am C D F Am C E7 Am'];
+  const notCheapest = [], duplicate = [], narrow = [];
+  for (const text of PROGS) {
+    for (let s = 0; s < 12; s++) {
+      const chords = transposeText(text, s);
+      const choices = arrangeChoices(chords), best = arrange(chords);
+      const label = `${chords.map(c => c.symbol).join(' ')}`;
+      if (Math.abs(choices[0].cost - best.cost) > 1e-9) notCheapest.push(`${label}: ${choices[0].cost} vs ${best.cost}`);
+      const seen = new Set(choices.map(a => tabsOf(a).join(' ')));
+      if (seen.size !== choices.length) duplicate.push(label);
+      // A four-chord loop of common chords can always be played at least two ways
+      // (open or barre shapes low down, or the same shapes higher up the neck).
+      if (chords.length === 4 && choices.length === 3) {
+        const far = choices.slice(1).filter(a => tabsOf(a).filter((t, i) => t !== tabsOf(choices[0])[i]).length >= 2);
+        if (!far.length) narrow.push(label);
+      }
+    }
+  }
+  check(`#1 is still the cheapest arrangement (${PROGS.length} progressions, 12 keys)`, !notCheapest.length, notCheapest.slice(0, 3).join('; '));
+  check('no arrangement appears twice in the top 3', !duplicate.length, duplicate.slice(0, 3).join('; '));
+  check('four-chord loops get an alternative that changes at least two chords', !narrow.length, narrow.slice(0, 3).join('; '));
+
+  // C G Am F is the textbook case: open chords, the same loop with barres, and higher up.
+  const styles = arrangeChoices(chordsOf('C G Am F')).map(a => a.style.id);
+  check(`C G Am F offers open chords first, then two other approaches (${styles.join(', ')})`,
+    styles[0] === 'open' && new Set(styles).size === 3, styles.join(', '));
 }
 
 export default results;

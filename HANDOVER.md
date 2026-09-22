@@ -6,7 +6,7 @@ conventions; this file explains what exists, why it works the way it does, and w
 ## Status
 
 Everything described below is built and verified: `python tools/validate.py` passes
-(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (132 checks).
+(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (147 checks).
 Both were re-run at the time of writing.
 
 **Chords page** (`index.html`)
@@ -23,12 +23,19 @@ Both were re-run at the time of writing.
 - **Harmony**: key detection, Roman numerals with inversion figures, chord roles (tonic /
   subdominant / dominant, secondary dominants, borrowed chords, tritone substitutions,
   brief key changes), root motion, named patterns, cadences.
-- **Easiest voicings**: a Viterbi search over difficulty plus transition cost, with the
-  top 3 combinations shown and their differences highlighted.
+- **Easiest voicings**: a Viterbi search over difficulty plus transition cost. The top 3
+  are different approaches, not near-copies: #1 is the cheapest, the others the best way to
+  play it mostly with open chords, barres or up the neck (labelled), when they change at
+  least a third of the chords; the next cheapest fill any gap.
+- **Chord lengths**: `C:2` (bars) or bar lines (`C | G Am` = 1, ½, ½). Changes cost the same
+  however long a chord lasts; each bar beyond the first adds `sustain` (0.25) of its difficulty.
 - **Key and capo rankings**: every key and every capo position, rated by the lowest level
   it can be played at, then by effort relative to the top pick.
 - **Options**: My level, barre comfort, chords to avoid, highest capo, simpler chords,
   inversions, repeats, sharps/flats.
+- **Shareable links**: the address holds the chords, every setting that differs from its
+  default, and the chosen key or capo (`#chords=C+G+Am+F&level=beginner&capo=3`). Old
+  chord-only links still open; bad values fall back to defaults. Sharps/flats stay per browser.
 - **Scales**: ranked suggestions, a per-chord breakdown with a one-note fix where a chord
   doesn't fit, and a fretboard with the easiest hand position.
 - **Song presets** (`data/songs.json`): 14 progressions, chords only, picked from a
@@ -73,6 +80,8 @@ Both were re-run at the time of writing.
 | `DEFAULT_OPTIONS.weights` (`js/progression.js`) | travel 0.2, jump 0.3, adjust 0.1, slide 0.05, guide 0.2, finger 0.35 | transition cost per fret / per finger |
 | `DEFAULT_OPTIONS.hold` | 0.5 | share of difficulty charged when the grip carries over |
 | `DEFAULT_OPTIONS.easyBarreFactor` | 0.35 | barre penalty kept when barres are "easy for me" |
+| `DEFAULT_OPTIONS.sustain` | 0.25 | share of a chord's difficulty added per bar beyond the first |
+| `STYLES` (`js/progression.js`) | open: frets ≤ 4, no 4-string barre; barre: 4+ strings; neck: lowest fret ≥ 5 | top-3 approaches; an alternative must change ⌈n/3⌉ chords |
 | `DEFAULT_OPTIONS` penalties | simplify 2, inversion 1.5, bass omit 1.5 | cost of changing what is played |
 | `LEVELS` (`js/difficulty.js`) | ≤3, ≤4.5, ≤6.5, above | Beginner / Improver / Intermediate / Advanced |
 | `suggestScales` (`js/scales.js`) | clash + 2×(1−coverage) + 0.75 off-tonic + style terms | scale ranking |
@@ -86,23 +95,26 @@ ever sounds wrong, change the constant and re-run the suite to see what it distu
   extended chords (m9 with the 3rd in the bass, 13 with the 9th) have no voicing.
 - **Relative-key loops are ambiguous** (F#m D A E). One key is picked and the other named as
   an alternative; the Key picker overrides.
-- **No rhythm or duration.** Every chord counts once, however long it lasts, so a progression
-  with one bar of a hard chord is scored like one with four.
+- **Lengths are in bars only.** No beats, tempo or strumming, so a quick change inside a bar
+  is priced like any other change.
 - **Standard tuning only**, and no left-handed or non-guitar instruments, though the data
   file has a `tuning` field that the code reads.
-- **The top-3 combinations are the literal three cheapest**, so #2 sometimes differs from #1
-  by a single chord instead of offering a different approach.
-- **Song presets are simplified** sections, not full arrangements.
+- **Some songs have only two real approaches** (their barres already sit up the neck); the
+  third slot then shows the cheapest near-variant of #1.
+- **Song presets are simplified** sections, not full arrangements, and have no lengths yet.
+- **Browser support** is 2021 on (modules, top-level await, fetch), tested only in current
+  Chrome; older browsers get a message instead of a blank page.
 
 ## If you continue
 
 Likely next steps, roughly in order of value:
-1. More voicings, especially inversions of extended chords and higher-position shapes.
-2. Rhythm or bar counts, so chord duration can weigh into effort.
-3. Alternative tunings and capo-aware chord naming on the Chords page.
-4. Diversity in the top 3 (open / barre / up the neck) instead of the three cheapest.
-5. Audio playback of a voicing or scale.
-6. Saving a progression to a URL to share (the hash already carries the chord text).
+1. Automatic checks on push (GitHub Actions: `validate.py` plus the browser suite headless),
+   since every push to `main` publishes the site.
+2. More voicings, especially inversions of extended chords and higher-position shapes.
+3. Audio playback of a voicing, an arrangement or a scale (Web Audio, no library).
+4. Works offline / installable (manifest + service worker).
+5. Alternative tunings and capo-aware chord naming on the Chords page.
+6. Lengths for the song presets.
 
 The project is a local git repository (branch `main`, pushed to
 github.com/bartoszbielawski/easy-changes), started from this state.

@@ -1,8 +1,9 @@
 // Chord database: chord types, symbol parsing, spelling, guitar voicings and lookup.
-import chordTypesData from '../data/chord-types.json' with { type: 'json' };
-import voicingData from '../data/guitar-voicings.json' with { type: 'json' };
+import { loadJson } from './data.js';
 import { parseNote, parseDegree, spellDegree, mod12, pcName, DEFAULT_NAMES, SHARP_NAMES, FLAT_NAMES } from './theory.js';
 import { scoreVoicing } from './difficulty.js';
+
+const [chordTypesData, voicingData] = await Promise.all([loadJson('chord-types.json'), loadJson('guitar-voicings.json')]);
 
 export const CHORD_TYPES = chordTypesData.types.map(t => {
   const degrees = t.degrees.map(parseDegree);

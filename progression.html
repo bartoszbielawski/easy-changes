@@ -4,8 +4,37 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Progression Planner · Easy Changes</title>
+  <meta name="description" content="Type a chord progression and get the easiest way to play it on guitar: voicings for your level, the best key or capo, the harmony explained, and scales to solo with.">
+  <!-- Link previews (chat apps, social sites) need absolute URLs and a PNG, not SVG. -->
+  <meta property="og:site_name" content="Easy Changes">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Easy Changes: the easiest way to play a progression">
+  <meta property="og:description" content="Type a chord progression and get the easiest way to play it on guitar: voicings for your level, the best key or capo, the harmony explained, and scales to solo with.">
+  <meta property="og:url" content="https://bartoszbielawski.github.io/easy-changes/progression.html">
+  <meta property="og:image" content="https://bartoszbielawski.github.io/easy-changes/img/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="An orange guitar pick with an arrow, next to the words Easy Changes">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="preload" href="data/chord-types.json" as="fetch" crossorigin>
+  <link rel="preload" href="data/guitar-voicings.json" as="fetch" crossorigin>
+  <link rel="preload" href="data/scales.json" as="fetch" crossorigin>
+  <link rel="preload" href="data/songs.json" as="fetch" crossorigin>
+  <script>
+    // If this browser can't run the page's modules (older than 2021), or a data file
+    // fails to download, the modules fail silently and the page stays empty. Their
+    // errors still reach window, so show a message instead. Plain ES5 on purpose.
+    window.showUnsupported = function () {
+      var note = document.getElementById('unsupported');
+      if (window.easyChangesReady || !note) return;
+      document.documentElement.className += ' unsupported';
+      note.hidden = false;
+    };
+    window.addEventListener('error', window.showUnsupported);
+  </script>
   <noscript><style>main > :not(noscript), footer { display: none !important; }</style></noscript>
 </head>
 <body>
@@ -15,12 +44,14 @@
   </header>
 
   <main>
-    <noscript><p class="noscript">Easy Changes works out chords and voicings in your browser, so it needs JavaScript. Turn JavaScript on for this site and reload the page.</p></noscript>
+    <noscript><p class="notice">Easy Changes works out chords and voicings in your browser, so it needs JavaScript. Turn JavaScript on for this site and reload the page.</p></noscript>
+    <p class="notice" id="unsupported" hidden>Easy Changes couldn't start in this browser. It needs a browser from 2021 or later: a current Chrome, Edge, Firefox or Safari will work.</p>
     <form id="prog-form" class="entry" autocomplete="off">
       <label class="field wide">
         <span>Chords</span>
-        <input id="prog" placeholder="e.g. C G Am F  or  Bb | Gm | Eb | F" spellcheck="false">
+        <input id="prog" placeholder="e.g. C G Am F  or  Bb | Gm | Eb | F" spellcheck="false" aria-describedby="prog-hint">
       </label>
+      <p class="hint" id="prog-hint">Chords count one bar each. To show that some last longer, add bar lines (<code>C | G Am | F</code>) or a length in bars (<code>C:2</code>).</p>
       <div class="examples" id="examples">
         <label class="song-pick"><span>Song</span>
           <select id="song"><option value="">Pick a song…</option></select>
@@ -94,5 +125,6 @@
   </main>
   <footer><div id="legend"></div></footer>
   <script type="module" src="js/progression-app.js"></script>
+  <script nomodule>window.showUnsupported();</script>
 </body>
 </html>

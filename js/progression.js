@@ -26,6 +26,12 @@ export const DEFAULT_OPTIONS = {
   // (slide, or fingers staying put) only this share of its difficulty is paid again.
   hold: 0.5,
   easyBarreFactor: 0.35, // with barres: 'easy', barre difficulty counts this much
+  // How long each chord lasts, in bars (from parseProgression); null means one bar each.
+  // Changes cost the same however long a chord lasts, but holding a hard grip for four
+  // bars is more work than passing through it: each bar beyond the first adds this share
+  // of the chord's difficulty (and a half-bar chord takes off half as much).
+  durations: null,
+  sustain: 0.25,
 };
 
 // Simpler chord to fall back on for each type (one step at a time).
@@ -41,15 +47,29 @@ const SIMPLER = {
 const MAJOR_KEY_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 const MINOR_KEY_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
 
-/** Split "C G | Am F" / "C, G, Am, F" into chords. Unknown symbols are reported, not dropped silently. */
+/**
+ * Split "C G | Am F" / "C, G, Am, F" into chords, with how long each lasts in bars.
+ * "C:2" lasts two bars. With bar lines, chords without a length share their bar
+ * ("C | G Am" gives 1, ½, ½); without bar lines each chord counts as one bar.
+ * Unknown symbols are reported, not dropped silently.
+ */
 export function parseProgression(text) {
-  const tokens = String(text).split(/[\s,|]+/).filter(Boolean);
-  const chords = [], errors = [];
-  for (const token of tokens) {
-    const chord = getChord(token);
-    if (chord) chords.push(chord); else errors.push(token);
+  const chords = [], durations = [], errors = [];
+  const hasBars = String(text).includes('|');
+  for (const bar of String(text).split('|')) {
+    const tokens = bar.split(/[\s,]+/).filter(Boolean).map(token => {
+      const m = /^(.+?)(?::(\d+(?:\.\d+)?))?$/.exec(token);
+      const length = m[2] === undefined ? null : Number(m[2]);
+      return { token, chord: length === 0 ? null : getChord(m[1]), length };
+    });
+    const share = 1 / Math.max(1, tokens.filter(t => t.length === null).length);
+    for (const t of tokens) {
+      if (!t.chord) { errors.push(t.token); continue; }
+      chords.push(t.chord);
+      durations.push(t.length ?? (hasBars ? share : 1));
+    }
   }
-  return { chords, errors };
+  return { chords, durations, errors };
 }
 
 /** Guess the key: the key that fits the chords best (see analysis.detectKeys). */
@@ -235,12 +255,76 @@ export function arrange(chords, options = {}) {
  * (fewer if there aren't k). Each has the same shape as arrange()'s result.
  */
 export function arrangeTop(chords, options = {}, k = 3) {
+  const plan = planner(chords, options);
+  if (!plan.feasible) return [plan.infeasible];
+  return plan.search(plan.cands, k).map(p => plan.build(plan.cands, p));
+}
+
+// Ways of playing a progression that feel different under the hand. A voicing can fit
+// more than one (a barre at fret 7 is both a barre and up the neck).
+const frettedOf = v => v.frets.filter(f => f > 0);
+export const STYLES = [
+  { id: 'open', name: 'open chords', fits: v => Math.max(0, ...frettedOf(v)) <= 4 && barreWidth(v) < 4 },
+  { id: 'barre', name: 'barre chords', fits: v => barreWidth(v) >= 4 },
+  { id: 'neck', name: 'up the neck', fits: v => frettedOf(v).length > 0 && Math.min(...frettedOf(v)) >= 5 },
+];
+
+/** The style most of an arrangement's chords share, or 'mixed' when none covers half. */
+export function styleOf(arrangement) {
+  const steps = arrangement.steps;
+  const counts = STYLES.map(st => ({ st, n: steps.filter(s => st.fits(s.voicing)).length }))
+    .sort((a, b) => b.n - a.n);
+  return counts[0].n * 2 >= steps.length ? counts[0].st : { id: 'mixed', name: 'mixed shapes' };
+}
+
+/**
+ * Up to k arrangements that are genuinely different ways to play the progression, not
+ * the k cheapest (which are often the best one with a single chord swapped). #1 is still
+ * the cheapest. The others are the best way to play it mostly in open position, mostly
+ * with barres and mostly up the neck, cheapest first, kept only when they change at least
+ * a third of the chords. Any slots left are filled with the next cheapest combinations.
+ * Each result also carries `style` ({ id, name }).
+ */
+export function arrangeChoices(chords, options = {}, k = 3) {
+  const plan = planner(chords, options);
+  if (!plan.feasible) return [plan.infeasible];
+  const { cands } = plan;
+  const tabs = a => a.steps.map(s => s.voicing.tab + s.played);
+  const differing = (a, b) => { const tb = tabs(b); return tabs(a).filter((t, i) => t !== tb[i]).length; };
+  const minDiff = Math.max(1, Math.ceil(chords.length / 3));
+
+  const chosen = [plan.build(cands, plan.search(cands, 1)[0])];
+  const styled = STYLES.flatMap(st => {
+    // Keep each chord's voicings in this style; a chord with none keeps all of its own.
+    const only = cands.map(cs => (cs.some(c => st.fits(c.voicing)) ? cs.filter(c => st.fits(c.voicing)) : cs));
+    return plan.search(only, 1).map(p => plan.build(only, p));
+  }).sort((a, b) => a.cost - b.cost);
+  for (const a of styled) {
+    if (chosen.length < k && chosen.every(c => differing(a, c) >= minDiff)) chosen.push(a);
+  }
+  if (chosen.length < k) {
+    for (const a of plan.search(cands, 4 * k).map(p => plan.build(cands, p))) {
+      if (chosen.length < k && chosen.every(c => differing(a, c) > 0)) chosen.push(a);
+    }
+  }
+  const [best, ...rest] = chosen;
+  return [best, ...rest.sort((a, b) => a.cost - b.cost)].map(a => ({ ...a, style: styleOf(a) }));
+}
+
+/**
+ * The search behind arrangeTop and arrangeChoices: candidate voicings for each chord,
+ * search(cands, k) for the k cheapest paths through any per-chord subset of them, and
+ * build() to turn a path into an arrangement. Costs don't depend on the subset, so an
+ * arrangement found among fewer voicings is priced exactly like any other.
+ */
+function planner(chords, options) {
   const opts = { ...DEFAULT_OPTIONS, ...options, weights: { ...DEFAULT_OPTIONS.weights, ...options.weights } };
   const avoidSet = avoidKeys(opts.avoid);
   const cands = chords.map(c => candidatesFor(c, opts, avoidSet));
   const unplayable = chords.filter((c, i) => !cands[i].length).map(c => c.symbol);
   if (!chords.length || unplayable.length) {
-    return [{ feasible: false, steps: [], cost: Infinity, avgCost: Infinity, maxDifficulty: Infinity, movement: 0, unplayable }];
+    const infeasible = { feasible: false, steps: [], cost: Infinity, avgCost: Infinity, maxDifficulty: Infinity, movement: 0, unplayable };
+    return { feasible: false, infeasible };
   }
   // The lowest level this progression can be played at is set by its hardest unavoidable
   // chord: the largest, over chords, of each chord's easiest voicing.
@@ -268,47 +352,51 @@ export function arrangeTop(chords, options = {}, k = 3) {
     }
     return memo.get(key);
   };
-  const first = v => v.diff + v.penalty;
+  // Extra share of difficulty for how long chord i is held (0 for one bar).
+  const held = i => opts.sustain * ((opts.durations?.[i] ?? 1) - 1);
+  const arrive = (u, v, i) => step(u, v).total + v.diff * held(i);
+  const first = v => v.diff * (1 + held(0)) + v.penalty;
 
   // k-best Viterbi: every (chord, voicing) state keeps its k cheapest partial paths,
   // each remembering which (voicing, rank) it came from. For a loop, the first
   // chord's voicing is fixed per run so the closing move can be priced exactly.
-  const runFrom = startIdx => {
-    let layer = cands[0].map((c, j) => (startIdx === null || j === startIdx ? [{ cost: first(c), from: null }] : []));
-    const layers = [layer];
-    for (let i = 1; i < n; i++) {
-      const prev = cands[i - 1];
-      layer = cands[i].map(v => {
-        const options = [];
-        prev.forEach((u, pj) => layer[pj].forEach((entry, pr) => {
-          options.push({ cost: entry.cost + step(u, v).total, from: [pj, pr] });
-        }));
-        return options.sort((a, b) => a.cost - b.cost).slice(0, k);
-      });
-      layers.push(layer);
-    }
-    const finals = [];
-    layer.forEach((entries, j) => entries.forEach((entry, r) => {
-      // On repeat, the first chord is reached from the last one instead of formed from scratch.
-      const close = startIdx !== null && n > 1 ? step(cands[n - 1][j], cands[0][startIdx]).total - first(cands[0][startIdx]) : 0;
-      finals.push({ total: entry.cost + close, j, r });
-    }));
-    return finals.sort((a, b) => a.total - b.total).slice(0, k).map(f => {
-      const path = [f.j];
-      let from = layers[n - 1][f.j][f.r].from;
-      for (let i = n - 2; i >= 0; i--) {
-        path.unshift(from[0]);
-        from = layers[i][from[0]][from[1]].from;
+  const search = (cs, k) => {
+    const runFrom = startIdx => {
+      let layer = cs[0].map((c, j) => (startIdx === null || j === startIdx ? [{ cost: first(c), from: null }] : []));
+      const layers = [layer];
+      for (let i = 1; i < n; i++) {
+        const prev = cs[i - 1];
+        layer = cs[i].map(v => {
+          const options = [];
+          prev.forEach((u, pj) => layer[pj].forEach((entry, pr) => {
+            options.push({ cost: entry.cost + arrive(u, v, i), from: [pj, pr] });
+          }));
+          return options.sort((a, b) => a.cost - b.cost).slice(0, k);
+        });
+        layers.push(layer);
       }
-      return { total: f.total, path };
-    });
+      const finals = [];
+      layer.forEach((entries, j) => entries.forEach((entry, r) => {
+        // On repeat, the first chord is reached from the last one instead of formed from scratch.
+        const close = startIdx !== null && n > 1 ? arrive(cs[n - 1][j], cs[0][startIdx], 0) - first(cs[0][startIdx]) : 0;
+        finals.push({ total: entry.cost + close, j, r });
+      }));
+      return finals.sort((a, b) => a.total - b.total).slice(0, k).map(f => {
+        const path = [f.j];
+        let from = layers[n - 1][f.j][f.r].from;
+        for (let i = n - 2; i >= 0; i--) {
+          path.unshift(from[0]);
+          from = layers[i][from[0]][from[1]].from;
+        }
+        return { total: f.total, path };
+      });
+    };
+    const starts = opts.loop && n > 1 ? cs[0].map((_, j) => j) : [null];
+    return starts.flatMap(runFrom).sort((a, b) => a.total - b.total).slice(0, k);
   };
 
-  const starts = opts.loop && n > 1 ? cands[0].map((_, j) => j) : [null];
-  const best = starts.flatMap(runFrom).sort((a, b) => a.total - b.total).slice(0, k);
-
-  return best.map(({ total, path }) => {
-    const steps = path.map((j, i) => ({ input: chords[i], ...cands[i][j] }));
+  const build = (cs, { total, path }) => {
+    const steps = path.map((j, i) => ({ input: chords[i], ...cs[i][j] }));
     const arrivals = steps.map((s, i) => (i > 0 ? step(steps[i - 1], s) : opts.loop && n > 1 ? step(steps[n - 1], s) : null));
     const movement = arrivals.reduce((m, a, i) => m + (a && (i > 0 || opts.loop) ? a.move : 0), 0);
     return {
@@ -320,8 +408,10 @@ export function arrangeTop(chords, options = {}, k = 3) {
         how: s.how,
         voicing: s.voicing,
         difficulty: s.diff,
-        // Difficulty actually paid here: less than `difficulty` when the grip carries over.
+        // Difficulty actually paid for forming the grip: less than `difficulty` when it carries over.
         effort: i > 0 ? arrivals[i].effort : s.diff,
+        duration: opts.durations?.[i] ?? 1,
+        heldEffort: s.diff * held(i), // added (or, under a bar, taken off) for how long it's held
         gripKept: i > 0 && arrivals[i].formFactor < 0.999,
         moveIn: i > 0 ? arrivals[i].move : 0,
         move: i > 0 ? arrivals[i].details : null,
@@ -335,7 +425,9 @@ export function arrangeTop(chords, options = {}, k = 3) {
       substitutions: steps.filter(s => s.substituted).length,
       unplayable: [],
     };
-  });
+  };
+
+  return { feasible: true, cands, search, build };
 }
 
 /**

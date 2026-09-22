@@ -1,8 +1,10 @@
 // Scale suggestions for a progression: which scales fit every chord, how each one
 // sounds over each chord, and where to play it on the neck.
-import scaleData from '../data/scales.json' with { type: 'json' };
+import { loadJson } from './data.js';
 import { parseDegree, spellDegree, mod12, pcName, parseNote, SHARP_NAMES, FLAT_NAMES } from './theory.js';
 import { rootName, TUNING } from './chords.js';
+
+const scaleData = await loadJson('scales.json');
 
 export const SCALE_TYPES = scaleData.types.map((t, priority) => {
   const intervals = t.degrees.map(d => mod12(parseDegree(d).semitones));

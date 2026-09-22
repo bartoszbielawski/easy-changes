@@ -57,7 +57,12 @@ function renderRoots() {
 function renderPickers() {
 
   const common = COMMON_TYPES.map(id => CHORD_TYPES.find(t => t.id === id));
-  const more = Map.groupBy(CHORD_TYPES.filter(t => !COMMON_TYPES.includes(t.id)), t => t.category);
+  // Grouped by hand rather than with Map.groupBy, which needs a 2024 browser.
+  const more = new Map();
+  for (const t of CHORD_TYPES.filter(t => !COMMON_TYPES.includes(t.id))) {
+    if (!more.has(t.category)) more.set(t.category, []);
+    more.get(t.category).push(t);
+  }
   $('#types').innerHTML = `
     ${common.map(t => `<button type="button" data-type="${t.id}" title="${t.name}" aria-pressed="${t.id === state.type}">${t.symbol || 'maj'}</button>`).join('')}
     <select id="type-more" aria-label="More chord types">
@@ -203,3 +208,6 @@ setTimeout(() => {
   const invCount = chords.reduce((n, c) => n + getInversions(c).reduce((m, i) => m + getVoicings(i).length, 0), 0);
   $('#stats').textContent = `${CHORD_TYPES.length} chord types · ${chords.length} chords · ${rootCount} root-position voicings + ${invCount} inversion voicings · any slash chord generated on demand (standard tuning)`;
 }, 50);
+
+// Tells the guard script in the page head that everything loaded and ran.
+window.easyChangesReady = true;

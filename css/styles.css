@@ -109,7 +109,9 @@ footer > * + * { border-top: 0; padding-top: 0; }
 .checks input { margin: 0; accent-color: var(--accent); }
 .error { color: var(--hard); margin: 0; min-height: 1em; font-size: 0.88rem; }
 .error:empty { display: none; }
-.noscript {
+/* Shown instead of the page when it can't run: no JavaScript, or too old a browser. */
+.unsupported main > :not(.notice), .unsupported footer { display: none !important; }
+.notice {
   margin: 8px 0 16px; padding: 12px var(--gutter);
   background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);
   border-radius: var(--radius);
@@ -243,6 +245,8 @@ footer > * + * { border-top: 0; padding-top: 0; }
 .effort { font-variant-numeric: tabular-nums; }
 
 .alt-rank { font-weight: 700; color: var(--muted); }
+.alt-main { display: grid; gap: 1px; min-width: 0; }
+.alt-style { font-size: 0.75rem; color: var(--muted); }
 .alt-tabs { display: flex; flex-wrap: wrap; gap: 2px 14px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: 0.04em; }
 .alt-tabs .diff { color: var(--accent); font-weight: 700; }
 
