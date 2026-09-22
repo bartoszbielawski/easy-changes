@@ -39,6 +39,7 @@ checks run in all 12 keys. Add a case there whenever you change theory behaviour
 | `js/app.js`, `js/progression-app.js` | the two pages' UI |
 | `js/prefs.js`, `js/legend.js` | sharps/flats preference, shared scoring legend |
 | `data/*.json` | chord types, guitar voicings, scales, song presets — formats documented in `README.md` |
+| `img/logo.svg` | the pick logo, used in every header and as the favicon; its colours copy `--accent` and `--accent-contrast` by hand (an `<img>` can't read page CSS), so change both together |
 
 ## Conventions
 

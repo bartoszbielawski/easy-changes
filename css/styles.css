@@ -56,7 +56,9 @@ header, main, footer {
   padding: 0 var(--gutter);
 }
 header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding-top: 20px; padding-bottom: 16px; }
-h1 { font-size: 1.35rem; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: 1.35rem; margin: 0; letter-spacing: -0.01em; display: flex; align-items: center; gap: 0.35em; }
+/* Sized in em so the pick scales with the title. */
+h1 .logo { width: 1.3em; height: 1.3em; flex: none; }
 h2 { font-size: 1.15rem; margin: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .hint { color: var(--muted); font-size: 0.88rem; margin: 4px 0 0; }
@@ -74,7 +76,8 @@ footer > * { border-top: 1px solid var(--line); padding-top: 12px; }
 footer > * + * { border-top: 0; padding-top: 0; }
 
 /* ---- Form controls ------------------------------------------------------- */
-.entry { display: grid; gap: 10px; margin: 0 0 20px; }
+/* minmax(0, …): the song picker is as wide as its longest title and must not widen the form. */
+.entry { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 0 0 20px; }
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 0.8rem; color: var(--muted); }
 .field input, .field select {
   width: 100%; height: var(--control-h); padding: 0 10px;
@@ -99,7 +102,8 @@ footer > * + * { border-top: 0; padding-top: 0; }
 .song-pick select:hover { border-color: var(--accent); }
 
 /* Options fill the same width as the input above them. */
-.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 4px; }
+/* min(…, 100%) keeps a column from ever being wider than a small phone. */
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr)); gap: 12px; margin-top: 4px; }
 .checks { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 0.9rem; }
 .checks label { display: inline-flex; align-items: center; gap: 6px; }
 .checks input { margin: 0; accent-color: var(--accent); }
@@ -142,7 +146,7 @@ footer > * + * { border-top: 0; padding-top: 0; }
 
 /* ---- Voicing cards and diagrams ----------------------------------------- */
 .voicing-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
   gap: 12px; margin: 20px 0 24px;
 }
 .voicing {
@@ -206,7 +210,7 @@ footer > * + * { border-top: 0; padding-top: 0; }
 .h-notes strong { color: var(--text); }
 
 /* ---- Progression page: rankings ----------------------------------------- */
-.rankings { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px 24px; }
+.rankings { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 20px 24px; }
 .rankings .hint { margin: 2px 0 8px; }
 .options-list, .alts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 
@@ -308,4 +312,7 @@ footer > * + * { border-top: 0; padding-top: 0; }
   .badge { font-size: 0.68rem; letter-spacing: 0.03em; }
   .sequence .voicing { width: calc(50% - 24px); }
   .move { width: 32px; }
+  /* Keep the title, logo and page links on one row on a phone. */
+  header { column-gap: 8px; }
+  nav a { padding: 4px 6px; }
 }
