@@ -1,4 +1,4 @@
-# Hand-over: state of Chord Finder
+# Hand-over: state of Easy Changes
 
 Written 2026-09-22, at the end of the first build. `CLAUDE.md` has the commands and
 conventions; this file explains what exists, why it works the way it does, and what is left.

@@ -1,4 +1,4 @@
-# Working on Chord Finder
+# Working on Easy Changes
 
 A guitar chord and progression helper: two static pages, no build step, no dependencies.
 Plain ES modules plus JSON data files. There is no Node on this machine; Python is available.

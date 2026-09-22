@@ -1,6 +1,8 @@
-# Chord Finder
+# Easy Changes
 
 A web page for choosing guitar chords, transposing, and finding the easiest ways to play things.
+
+**Live site:** https://bartoszbielawski.github.io/easy-changes/
 
 Working on the code? Start with [CLAUDE.md](CLAUDE.md) (commands, conventions, gotchas) and [HANDOVER.md](HANDOVER.md) (state, design decisions, limitations, next steps).
 
