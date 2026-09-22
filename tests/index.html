@@ -14,10 +14,11 @@
     .t-fail::before { content: "✗"; color: var(--hard); font-weight: 700; }
     .t-detail { display: block; color: var(--hard); font-size: 0.8rem; word-break: break-word; }
   </style>
+  <noscript><style>#summary { display: none; }</style></noscript>
 </head>
 <body>
   <header><h1>Easy Changes tests</h1><nav><a href="../index.html">Chords</a><a href="../progression.html">Progression</a></nav></header>
-  <main><p class="t-summary" id="summary">Running…</p><div id="out"></div></main>
+  <main><noscript><p class="noscript">The tests run in your browser, so they need JavaScript. Turn it on for this site and reload the page.</p></noscript><p class="t-summary" id="summary">Running…</p><div id="out"></div></main>
   <script type="module">
     const $ = s => document.querySelector(s);
     try {
