@@ -6,7 +6,7 @@ conventions; this file explains what exists, why it works the way it does, and w
 ## Status
 
 Everything described below is built and verified: `python tools/validate.py` passes
-(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (130 checks).
+(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (132 checks).
 Both were re-run at the time of writing.
 
 **Chords page** (`index.html`)
@@ -31,7 +31,9 @@ Both were re-run at the time of writing.
   inversions, repeats, sharps/flats.
 - **Scales**: ranked suggestions, a per-chord breakdown with a one-note fix where a chord
   doesn't fit, and a fretboard with the easiest hand position.
-- **Song presets** (`SONGS` in `js/progression-app.js`): 14 progressions, chords only.
+- **Song presets** (`data/songs.json`): 14 progressions, chords only, picked from a
+  dropdown grouped by style. The picker follows the chord box: it names the song while the
+  chords match and resets when they are edited.
 
 ## Decisions worth knowing
 

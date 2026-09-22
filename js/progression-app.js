@@ -7,26 +7,12 @@ import { getChord } from './chords.js';
 import { suggestScales, scalePositions, handFretOf, makeScale } from './scales.js';
 import { renderFretboard } from './fretboard.js';
 import { analyzeProgression, FUNCTION_NAMES } from './analysis.js';
+import songData from '../data/songs.json' with { type: 'json' };
 
 const $ = sel => document.querySelector(sel);
 const EXAMPLES = ['C G Am F', 'Bb Gm Eb F', 'F#m D A E', 'Dm7 G7 Cmaj7 A7', 'Ab Fm Db Eb', 'Em C G D'];
-// Harder real-world progressions to try the optimizer on (chord changes only).
-const SONGS = [
-  ['Hotel California', 'Bm F# A E G D Em F# G D F# Bm G D Em F#'],
-  ['Wonderwall', 'F#m7 A Esus4 B7sus4'],
-  ['Sultans of Swing', 'Dm C Bb A'],
-  ['House of the Rising Sun', 'Am C D F Am C E7 Am'],
-  ['Sweet Home Alabama', 'D C G'],
-  ['Hey Joe', 'C G D A E'],
-  ['While My Guitar Gently Weeps', 'Am Am/G D7/F# F Am G D E7'],
-  ['Creep', 'G B C Cm'],
-  ['Autumn Leaves', 'Cm7 F7 Bbmaj7 Ebmaj7 Am7b5 D7 Gm Gm Am7b5 D7 Gm Gm Cm7 F7 Bbmaj7 Ebmaj7 Am7b5 D7 Gm'],
-  ['Fly Me to the Moon', 'Am7 Dm7 G7 Cmaj7 Fmaj7 Bm7b5 E7 Am7'],
-  ['The Girl from Ipanema', 'Fmaj7 Fmaj7 G7 G7 Gm7 Gb7 Fmaj7 Gb7'],
-  ['Blue Bossa', 'Cm7 Cm7 Fm7 Fm7 Dm7b5 G7 Cm7 Cm7 Ebm7 Ab7 Dbmaj7 Dbmaj7 Dm7b5 G7 Cm7 Cm7'],
-  ['So What', 'Dm7 Ebm7 Dm7'],
-  ['Take Five', 'Ebm Bbm7'],
-];
+// Harder real-world progressions to try the optimizer on (data/songs.json).
+const SONGS = songData.songs;
 
 let result = null;
 let altIndex = 0;   // which of the top-3 combinations is shown for the selected key/capo
@@ -36,9 +22,17 @@ let positionIndex = 0;
 let selected = { list: 'keys', shift: 0 };
 const isSelected = (o, list) => selected.list === list && (list === 'keys' ? o.shift === selected.shift : o.capo === selected.capo);
 
-$('#examples').innerHTML = EXAMPLES.map(e => `<button type="button" data-example="${e}">${e}</button>`).join('')
-  + '<span class="examples-label">Songs:</span>'
-  + SONGS.map(([title, chords]) => `<button type="button" class="song" data-example="${chords}" title="${chords}">${title}</button>`).join('');
+$('#examples').insertAdjacentHTML('afterbegin',
+  EXAMPLES.map(e => `<button type="button" data-example="${e}">${e}</button>`).join(''));
+// Songs are grouped by style, in the order the data file first mentions each style.
+for (const style of new Set(SONGS.map(s => s.style))) {
+  const group = document.createElement('optgroup');
+  group.label = style;
+  SONGS.forEach((s, i) => { if (s.style === style) group.append(new Option(`${s.title} · ${s.by}`, i)); });
+  $('#song').append(group);
+}
+// Compare chord text by its chords, so spacing or bar lines don't hide a match.
+const chordKey = text => String(text).split(/[\s,|]+/).filter(Boolean).join(' ');
 
 function fillKeySelect(guess) {
   const current = $('#key').value;
@@ -263,6 +257,9 @@ function moveLabel(m) {
 function update() {
   const text = $('#prog').value;
   history.replaceState(null, '', `#${encodeURIComponent(text)}`);
+  // The picker names a song only while the chords are still that song's.
+  const song = SONGS.findIndex(s => chordKey(s.chords) === chordKey(text));
+  $('#song').value = song < 0 ? '' : String(song);
   const { chords, errors } = parseProgression(text);
   $('#prog-errors').textContent = errors.length ? `Not recognised: ${errors.join(', ')}` : '';
   fillKeySelect(guessKey(chords, { loop: $('#loop').checked }));
@@ -282,6 +279,13 @@ function update() {
 }
 
 // Start on the original key so the first view answers "how do I play this as written?"
+function loadProgression(text) {
+  $('#prog').value = text;
+  $('#key').value = 'auto';
+  update();
+  selectOriginal();
+}
+
 function selectOriginal() {
   selected = { list: 'keys', shift: 0 };
   altIndex = 0;
@@ -293,6 +297,7 @@ function selectOriginal() {
 
 $('#accidentals').value = getAccidentals();
 $('#prog-form').addEventListener('input', e => {
+  if (e.target.id === 'song') { if (e.target.value) loadProgression(SONGS[e.target.value].chords); return; }
   if (e.target.id === 'accidentals') setAccidentals(e.target.value);
   update();
   if (e.target.id === 'prog' && result) selectOriginal();
@@ -300,7 +305,7 @@ $('#prog-form').addEventListener('input', e => {
 $('#prog-form').addEventListener('submit', e => e.preventDefault());
 document.addEventListener('click', e => {
   const ex = e.target.closest('[data-example]');
-  if (ex) { $('#prog').value = ex.dataset.example; $('#key').value = 'auto'; update(); selectOriginal(); return; }
+  if (ex) { loadProgression(ex.dataset.example); return; }
   const alt = e.target.closest('button.alt');
   const scaleBtn = e.target.closest('button[data-scale]');
   if (scaleBtn) { scaleIndex = Number(scaleBtn.dataset.scale); positionIndex = 0; renderArrangement(); return; }
@@ -321,6 +326,18 @@ document.addEventListener('click', e => {
 });
 
 $('#legend').innerHTML = renderLegend({ effort: true });
-$('#prog').value = decodeURIComponent(location.hash.slice(1)) || 'C G Am F';
+// The address carries the current chord text. A hand-edited address can hold a stray '%',
+// which decodeURIComponent rejects, so fall back to nothing rather than break the page.
+function hashText() {
+  try { return decodeURIComponent(location.hash.slice(1)); } catch { return ''; }
+}
+
+$('#prog').value = hashText() || 'C G Am F';
 update();
 if (result) selectOriginal();
+// Back/forward and edits to the address change the hash without reloading; follow them.
+// (update() writes the hash with replaceState, which doesn't fire this, so there is no loop.)
+window.addEventListener('hashchange', () => {
+  const text = hashText();
+  if (text && text !== $('#prog').value) loadProgression(text);
+});

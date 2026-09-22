@@ -21,7 +21,7 @@ python tools/validate.py
 Checks the chord and scale **data**: every voicing, in every key, sounds its chord's formula
 with the right bass, and its fingering is physically possible (1049 voicings, 18 scales).
 
-Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 130 checks).
+Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 132 checks).
 Expected values are written out from theory, not computed by the code under test, and most
 checks run in all 12 keys. Add a case there whenever you change theory behaviour.
 
@@ -36,9 +36,9 @@ checks run in all 12 keys. Add a case there whenever you change theory behaviour
 | `js/analysis.js` | key detection, Roman numerals, chord roles, root motion, named patterns, cadences |
 | `js/scales.js` | scale spelling, clash scoring, `suggestScales`, fretboard positions |
 | `js/diagram.js`, `js/fretboard.js` | SVG chord diagrams and fretboard |
-| `js/app.js`, `js/progression-app.js` | the two pages' UI (song presets live in `SONGS` in the planner) |
+| `js/app.js`, `js/progression-app.js` | the two pages' UI |
 | `js/prefs.js`, `js/legend.js` | sharps/flats preference, shared scoring legend |
-| `data/*.json` | chord types, guitar voicings, scales — formats documented in `README.md` |
+| `data/*.json` | chord types, guitar voicings, scales, song presets — formats documented in `README.md` |
 
 ## Conventions
 

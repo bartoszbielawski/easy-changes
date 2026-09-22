@@ -1,0 +1,19 @@
+{
+  "$comment": "Song presets for the progression planner: chord changes only, simplified to one section, not full arrangements. 'by' is the best-known recording or the writer of a standard; 'style' groups the picker. Chords are written as a player would type them (spaces, commas or bars between chords).",
+  "songs": [
+    { "title": "Hotel California",             "by": "Eagles",                 "style": "Rock & pop", "chords": "Bm F# A E G D Em F# G D F# Bm G D Em F#" },
+    { "title": "Wonderwall",                   "by": "Oasis",                  "style": "Rock & pop", "chords": "F#m7 A Esus4 B7sus4" },
+    { "title": "Sultans of Swing",             "by": "Dire Straits",           "style": "Rock & pop", "chords": "Dm C Bb A" },
+    { "title": "House of the Rising Sun",      "by": "The Animals",            "style": "Rock & pop", "chords": "Am C D F Am C E7 Am" },
+    { "title": "Sweet Home Alabama",           "by": "Lynyrd Skynyrd",         "style": "Rock & pop", "chords": "D C G" },
+    { "title": "Hey Joe",                      "by": "Jimi Hendrix",           "style": "Rock & pop", "chords": "C G D A E" },
+    { "title": "While My Guitar Gently Weeps", "by": "The Beatles",            "style": "Rock & pop", "chords": "Am Am/G D7/F# F Am G D E7" },
+    { "title": "Creep",                        "by": "Radiohead",              "style": "Rock & pop", "chords": "G B C Cm" },
+    { "title": "Autumn Leaves",                "by": "Joseph Kosma",           "style": "Jazz",       "chords": "Cm7 F7 Bbmaj7 Ebmaj7 Am7b5 D7 Gm Gm Am7b5 D7 Gm Gm Cm7 F7 Bbmaj7 Ebmaj7 Am7b5 D7 Gm" },
+    { "title": "Fly Me to the Moon",           "by": "Bart Howard",            "style": "Jazz",       "chords": "Am7 Dm7 G7 Cmaj7 Fmaj7 Bm7b5 E7 Am7" },
+    { "title": "The Girl from Ipanema",        "by": "Antônio Carlos Jobim",   "style": "Jazz",       "chords": "Fmaj7 Fmaj7 G7 G7 Gm7 Gb7 Fmaj7 Gb7" },
+    { "title": "Blue Bossa",                   "by": "Kenny Dorham",           "style": "Jazz",       "chords": "Cm7 Cm7 Fm7 Fm7 Dm7b5 G7 Cm7 Cm7 Ebm7 Ab7 Dbmaj7 Dbmaj7 Dm7b5 G7 Cm7 Cm7" },
+    { "title": "So What",                      "by": "Miles Davis",            "style": "Jazz",       "chords": "Dm7 Ebm7 Dm7" },
+    { "title": "Take Five",                    "by": "Dave Brubeck Quartet",   "style": "Jazz",       "chords": "Ebm Bbm7" }
+  ]
+}

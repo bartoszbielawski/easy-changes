@@ -23,7 +23,7 @@ Then open http://localhost:8000. You can link straight to a chord, e.g. `#F%23m7
   - *Auto:* the chord page spells by chord type (Db, Eb, Ab, Bb for major; C#m, G#m for minor; sharps for diminished), and the progression page spells by key
   - *♭ / ♯:* always flats or always sharps
   - a chord you type keeps your spelling
-- **Progression** (`progression.html`): enter a progression, e.g. `Bb Gm Eb F`, or click one of the built-in song presets (Hotel California, Wonderwall, Autumn Leaves, Blue Bossa, So What…) to get:
+- **Progression** (`progression.html`): enter a progression, e.g. `Bb Gm Eb F`, or pick one of the built-in songs from the dropdown (Hotel California, Wonderwall, Autumn Leaves, Blue Bossa, So What…) to get:
   - **harmony analysis**:
     - the key, detected from how well each key fits the chords, plus V→I and ii–V–I resolutions (the picker can override it)
     - Roman numerals with inversions (I–V–vi–IV, V⁶, IV⁶₄)
@@ -52,6 +52,7 @@ Then open http://localhost:8000. You can link straight to a chord, e.g. `#F%23m7
 | `data/chord-types.json` | 29 chord qualities as scale-degree formulas (`1 b3 5 b7`), with symbol aliases and optional degrees |
 | `data/guitar-voicings.json` | Standard-tuning voicings: fixed **open** chords, plus **movable** shapes that shift to any key |
 | `data/scales.json` | 18 scales as degree formulas, with a short description of each |
+| `data/songs.json` | Song presets for the planner: `title`, `by`, `style` (groups the dropdown) and `chords` as typed |
 | `tools/validate.py` | Checks every voicing in every key against its formula, plus fingering sanity |
 
 Frets and fingers are written from the low E string to the high e string: `x` = muted, `0` = open.
@@ -74,6 +75,7 @@ Open http://localhost:8000/tests/ to run the music-theory test suite ([tests/tes
 - secondary dominants and borrowed chords
 - root motion, named patterns in every rotation, and cadences
 - key detection on 30 progressions, each transposed into all 12 keys
+- every song preset loads: all fields present and every chord recognised
 
 ## Library (`js/`)
 

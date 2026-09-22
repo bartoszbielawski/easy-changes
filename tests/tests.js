@@ -6,6 +6,7 @@ import { parseProgression, transposeChords } from '../js/progression.js';
 import { SCALE_TYPES, makeScale, fitOverChord, suggestScales, scalePositions } from '../js/scales.js';
 import { analyzeProgression, detectKeys, romanNumeral, rootMotion } from '../js/analysis.js';
 import { TUNING } from '../js/chords.js';
+import songData from '../data/songs.json' with { type: 'json' };
 
 const results = [];
 let current = '';
@@ -327,6 +328,17 @@ for (const [text, loop, accept] of KEYS) {
     if (!ok) failures.push(`+${s}: ${chords.map(c => c.symbol).join(' ')} → ${k.name}`);
   }
   check(`${text} → ${accept.join(' or ')} (all 12 keys)`, !failures.length, failures.slice(0, 3).join('; '));
+}
+
+// ===========================================================================
+suite('Song presets');
+// Every preset must load cleanly: a typo in the data file would otherwise show up only
+// as "Not recognised" after someone picks that song.
+{
+  const bad = songData.songs.filter(s => !['title', 'by', 'style', 'chords'].every(f => typeof s[f] === 'string' && s[f].trim()));
+  check(`all ${songData.songs.length} songs have a title, artist, style and chords`, !bad.length, bad.map(s => s.title).join(', '));
+  const unparsed = songData.songs.map(s => [s.title, parseProgression(s.chords).errors]).filter(([, e]) => e.length);
+  check('every song chord is recognised', !unparsed.length, unparsed.map(([t, e]) => `${t}: ${e.join(' ')}`).join('; '));
 }
 
 export default results;

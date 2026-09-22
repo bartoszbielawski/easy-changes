@@ -181,8 +181,20 @@ $('#search').addEventListener('submit', e => { e.preventDefault(); input.blur();
 
 renderPickers();
 $('#legend').innerHTML = renderLegend();
-const fromHash = decodeURIComponent(location.hash.slice(1));
+// The address carries the current chord text. A hand-edited address can hold a stray '%',
+// which decodeURIComponent rejects, so fall back to nothing rather than break the page.
+function hashText() {
+  try { return decodeURIComponent(location.hash.slice(1)); } catch { return ''; }
+}
+
+const fromHash = hashText();
 if (!(fromHash && applySymbol(fromHash))) render();
+// Back/forward and edits to the address change the hash without reloading; follow them.
+// (render() writes the hash with replaceState, which doesn't fire this, so there is no loop.)
+window.addEventListener('hashchange', () => {
+  const symbol = hashText();
+  if (symbol && applySymbol(symbol)) input.classList.remove('invalid');
+});
 
 // Database size, counted after first paint since generating every inversion takes a moment.
 setTimeout(() => {
