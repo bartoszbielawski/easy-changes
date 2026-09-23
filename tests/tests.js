@@ -486,7 +486,7 @@ suite('H and German naming');
   const READINGS = [
     ['F B C H7', 'F Bb C B7', true],        // Polish/German chart: B is B-flat
     ['Bm H E', 'Bbm B E', true],            // b-moll next to H
-    ['Es B | F/B H:2', null, true],         // an unknown word stays unknown; F/B is F/Bb
+    ['Xyz B | F/B H:2', null, true],        // an unknown word stays unknown; F/B is F/Bb
     ['Bb H', 'Bb B', false],                // an explicit Bb is already B-flat: nothing reread
     ['F B C', 'F B C', false],              // no H: English naming
     ['G D Em C', 'G D Em C', false],
@@ -495,7 +495,7 @@ suite('H and German naming');
     const r = parseProgression(text);
     const got = r.chords.map(c => c.symbol).join(' ');
     if (want === null) {
-      check(`"${text}" reads F/B as F/Bb and flags it`, r.germanB === flagged && got === 'Bb F/Bb B' && r.errors.join() === 'Es', `got "${got}", errors ${r.errors}, flag ${r.germanB}`);
+      check(`"${text}" reads F/B as F/Bb and flags it`, r.germanB === flagged && got === 'Bb F/Bb B' && r.errors.join() === 'Xyz', `got "${got}", errors ${r.errors}, flag ${r.germanB}`);
     } else {
       check(`"${text}" reads as ${want}${flagged ? ' (B as B-flat, noted)' : ''}`, got === want && r.germanB === flagged, `got "${got}", flag ${r.germanB}`);
     }
@@ -504,6 +504,44 @@ suite('H and German naming');
   const german = 'F B | C H7:2';
   const moved = replaceChords(german, transposeChords(parseProgression(german).chords, 2, undefined, 'auto'));
   check(`"${german}" up a tone copies as "G C | D C#7:2"`, moved === 'G C | D C#7:2', `got "${moved}"`);
+}
+
+// ===========================================================================
+suite('Polish note names');
+// Polish (and German) names: a sharp adds -is, a flat adds -es (-s after A and E), H is
+// B natural and B is B-flat. Songbooks write minor chords in lowercase.
+{
+  const same = (list, what) => {
+    const bad = list.filter(([p, e]) => getChord(p)?.symbol !== e).map(([p, e]) => `${p} → ${getChord(p)?.symbol ?? 'nothing'} (want ${e})`);
+    check(`${what}: ${list.map(x => x[0]).join(', ')}`, !bad.length, bad.join('; '));
+  };
+  same([['Cis', 'C#'], ['Dis', 'D#'], ['Eis', 'E#'], ['Fis', 'F#'], ['Gis', 'G#'], ['Ais', 'A#'], ['His', 'B#']], 'sharps end in -is');
+  same([['Ces', 'Cb'], ['Des', 'Db'], ['Es', 'Eb'], ['Fes', 'Fb'], ['Ges', 'Gb'], ['As', 'Ab'], ['Hes', 'Bb']], 'flats end in -es, -s after A and E');
+  same([['Fisis', 'F##'], ['Heses', 'Bbb'], ['Ases', 'Abb']], 'double sharps and flats');
+  same([['a', 'Am'], ['e', 'Em'], ['d', 'Dm'], ['fis', 'F#m'], ['cis', 'C#m'], ['h', 'Bm'], ['b', 'Bbm'], ['es', 'Ebm']], 'lowercase is minor');
+  same([['H#', 'B#'], ['f#', 'F#m'], ['eb7', 'Ebm7'], ['c#m', 'C#m']], 'mixed spellings');
+  same([['a7', 'Am7'], ['fis7', 'F#m7'], ['h7', 'Bm7'], ['am', 'Am'], ['am7', 'Am7'], ['e9', 'Em9'], ['a6', 'Am6']], 'lowercase with a suffix');
+  same([['Fis7', 'F#7'], ['Cis7', 'C#7'], ['Asmaj7', 'Abmaj7'], ['Es7', 'Eb7'], ['Gis', 'G#'], ['B7', 'B7']], 'uppercase stays major');
+  same([['a-moll', 'Am'], ['A-moll', 'Am'], ['Fis-dur', 'F#'], ['a-dur', 'A'], ['B-dur', 'Bb']], 'moll and dur');
+  same([['D/Fis', 'D/F#'], ['a/Gis', 'Am/G#'], ['Es/B', 'Eb/Bb'], ['G/H', 'G/B'], ['C/e', 'C/E']], 'bass notes');
+  // English symbols that look Polish keep their English meaning.
+  same([['Asus4', 'Asus4'], ['Esus4', 'Esus4'], ['Asus2', 'Asus2'], ['E7sus4', 'E7sus4'], ['Bb', 'Bb'], ['Eb', 'Eb'], ['Ab7', 'Ab7']], 'English stays English');
+
+  const READINGS = [
+    ['a C d G', 'Am C Dm G', false],          // a campfire classic: no B in it, nothing to note
+    ['e a H7 e', 'Em Am B7 Em', false],       // the typical minor-key cadence
+    ['F B C d', 'F Bb C Dm', true],           // lowercase d marks it Polish, so B is B-flat
+    ['D Fis h G', 'D F# Bm G', false],
+    ['Es B Es', 'Eb Bb Eb', true],
+    ['G C D', 'G C D', false],                // plain English: untouched
+  ];
+  for (const [text, want, noted] of READINGS) {
+    const r = parseProgression(text);
+    const got = r.chords.map(c => c.symbol).join(' ');
+    check(`"${text}" reads as ${want}${noted ? ' (B as B-flat, noted)' : ''}`, got === want && !r.errors.length && r.germanB === noted, `got "${got}", errors ${r.errors}, noted ${r.germanB}`);
+  }
+  const moved = replaceChords('a C | d G:2', transposeChords(parseProgression('a C | d G:2').chords, 2, undefined, 'auto'));
+  check('"a C | d G:2" up a tone copies in English as "Bm D | Em A:2"', moved === 'Bm D | Em A:2', `got "${moved}"`);
 }
 
 export default results;

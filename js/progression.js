@@ -1,6 +1,6 @@
 // Progression tools: choose the easiest voicings for a sequence of chords,
 // and rank transpositions / capo positions by how easy the result is to play.
-import { getChord, getVoicings } from './chords.js';
+import { getChord, getVoicings, isPolishSymbol } from './chords.js';
 import { mod12, parseNote, pcName, FLAT_NAMES, SHARP_NAMES } from './theory.js';
 import { LEVELS, levelFor } from './difficulty.js';
 import { detectKey } from './analysis.js';
@@ -56,7 +56,7 @@ const MINOR_KEY_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', '
 export function parseProgression(text) {
   const chords = [], durations = [], errors = [];
   const hasBars = String(text).includes('|');
-  const german = usesGermanNames(text);
+  const german = usesPolishNames(text);
   let germanB = false;
   for (const bar of String(text).split('|')) {
     const tokens = bar.split(/[\s,]+/).filter(Boolean).map(token => readToken(token, german));
@@ -72,17 +72,20 @@ export function parseProgression(text) {
   return { chords, durations, errors, germanB };
 }
 
-// A progression with an H chord in it (root or bass) is written in German/Polish naming.
-const usesGermanNames = text => /(^|[\s,|/])H/.test(String(text));
+// A progression with any chord that only reads in Polish/German naming (H, Fis, Es, a
+// lowercase minor…) is written in that naming, so its plain B means B-flat.
+const usesPolishNames = text => String(text).split(/[\s,|]+/).filter(Boolean)
+  .some(token => isPolishSymbol(token.replace(/:\d+(\.\d+)?$/, '')));
 
 // One chord as typed: "Am", "G/B" or "C:2" (two bars). A zero length makes it unreadable.
-// In German naming a plain B, as root or bass, is B-flat ("B" = Bb, "Bm" = Bbm, "F/B" = F/Bb);
-// an explicit Bb or B# keeps its meaning, and H itself is read by parseChordSymbol.
+// In Polish/German naming a plain B, as root or bass, is B-flat ("B" = Bb, "Bm" = Bbm,
+// "F/B" = F/Bb); an explicit Bb or B# keeps its meaning. H, Fis and the rest are read by
+// parseChordSymbol, which already takes B as B-flat, so its readings are left alone.
 function readToken(token, german = false) {
   const m = /^(.+?)(?::(\d+(?:\.\d+)?))?$/.exec(token);
   const length = m[2] === undefined ? null : Number(m[2]);
   let symbol = m[1];
-  const germanB = german && /^B(?![#b])|\/B(?![#b])$/.test(symbol);
+  const germanB = german && !isPolishSymbol(symbol) && /^B(?![#b])|\/B(?![#b])$/.test(symbol);
   if (germanB) symbol = symbol.replace(/^B(?![#b])/, 'Bb').replace(/\/B(?![#b])$/, '/Bb');
   return { token, chord: length === 0 ? null : getChord(symbol), length, lengthText: m[2], germanB };
 }
@@ -95,7 +98,7 @@ function readToken(token, german = false) {
  */
 export function replaceChords(text, chords) {
   let k = 0;
-  const german = usesGermanNames(text);
+  const german = usesPolishNames(text);
   return String(text).replace(/[^\s,|]+/g, token => {
     const t = readToken(token, german);
     if (!t.chord || k >= chords.length) return token;

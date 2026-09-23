@@ -41,29 +41,84 @@ export function getChordType(id) {
   return t;
 }
 
-// German, Polish, Czech and Scandinavian charts call B natural "H". It is read as B and
-// shown as B. (In those charts a plain "B" means B-flat; parseProgression handles that,
-// since only the rest of the progression can tell which naming a "B" is in.)
-const englishLetter = note => note.replace(/^H/, 'B');
+const typeForSuffix = s => TYPE_BY_SUFFIX.get(s) ?? TYPE_BY_SUFFIX.get(s.replace(/[()]/g, ''));
 
 /**
- * Parse a chord symbol such as "C", "F#m7", "Bbmaj7", "Dm7b5", "G7/B", "C6/9", "H7".
- * Returns null if the symbol is not recognised.
+ * Parse a chord symbol such as "C", "F#m7", "Bbmaj7", "Dm7b5", "G7/B", "C6/9", or in Polish
+ * and German naming "H7", "Fis", "cis7", "Es", "a", "D/Fis". Returns null if not recognised.
+ * English is tried first, so nothing English changes meaning ("Asus4" is A sus4, not "As"
+ * + "us4"); `polish` is set when only the Polish reading works.
  */
 export function parseChordSymbol(symbol) {
   const s = String(symbol).trim().replace(/♯/g, '#').replace(/♭/g, 'b');
-  const m = /^([A-H](?:#|b)?)(.*)$/.exec(s);
+  return parseEnglish(s) ?? parsePolish(s);
+}
+
+function parseEnglish(s) {
+  const m = /^([A-G](?:#|b)?)(.*)$/.exec(s);
   if (!m) return null;
-  const root = parseNote(englishLetter(m[1]));
+  const root = parseNote(m[1]);
   let rest = m[2].trim();
   let bass = null;
   // A trailing "/X" where X is a note is a bass note ("6/9" is not, since 9 is not a note).
-  const slash = /^(.*)\/([A-H](?:#|b)?)$/.exec(rest);
-  if (slash) { rest = slash[1]; bass = parseNote(englishLetter(slash[2])); }
-  const type = TYPE_BY_SUFFIX.get(rest) ?? TYPE_BY_SUFFIX.get(rest.replace(/[()]/g, ''));
-  if (!type) return null;
-  return { root, type, bass };
+  const slash = /^(.*)\/([A-G](?:#|b)?)$/.exec(rest);
+  if (slash) { rest = slash[1]; bass = parseNote(slash[2]); }
+  const type = typeForSuffix(rest);
+  return type ? { root, type, bass, polish: false } : null;
 }
+
+// Polish (and German) note names: H is B natural and B is B-flat; a sharp adds -is (Fis,
+// Cis, Ais), a flat adds -es (Des, Ges, Hes), shortened to -s after A and E (As, Es).
+// Songbooks write minor chords in lowercase: "a" = Am, "fis7" = F#m7, "h" = Bm, "b" = Bbm.
+// Mixed spellings ("H#", "f#") turn up too, so the English signs are accepted as well.
+const POLISH_ENDINGS = [['isis', '##'], ['is', '#'], ['eses', 'bb'], ['ses', 'bb'], ['es', 'b'], ['s', 'b'], ['#', '#'], ['b', 'b'], ['', '']];
+
+// Every way the start of `s` can be read as a Polish note name, longest first.
+function polishNotes(s) {
+  const letter = s[0];
+  if (!letter || !/[A-Ha-h]/.test(letter)) return [];
+  const up = letter.toUpperCase(), afterAE = up === 'A' || up === 'E';
+  const out = [];
+  for (const [ending, acc] of POLISH_ENDINGS) {
+    if (s.slice(1, 1 + ending.length).toLowerCase() !== ending) continue;
+    if ((ending === 's' || ending === 'ses') && !afterAE) continue;   // only As, Es (Ases, Eses)
+    if ((ending === 'es' || ending === 'eses') && afterAE) continue;  // not Aes, Ees
+    if (up === 'B' && ending) continue;                               // B is already B-flat
+    const name = up === 'H' ? 'B' + acc : up === 'B' ? 'Bb' : up + acc;
+    out.push({ note: parseNote(name), length: 1 + ending.length, minor: letter !== up });
+  }
+  return out;
+}
+
+// A whole string as one note, for a bass: Polish first ("Fis", "h", "b"), then "F#" / "Eb".
+function polishBass(s) {
+  const exact = polishNotes(s).find(n => n.length === s.length);
+  if (exact) return exact.note;
+  return /^[A-Ga-g](#|b)$/.test(s) ? parseNote(s) : null;
+}
+
+function parsePolish(s) {
+  for (const root of polishNotes(s)) {
+    let rest = s.slice(root.length).trim();
+    let bass = null;
+    const slash = /^(.*)\/([^/]+)$/.exec(rest);
+    const b = slash && polishBass(slash[2]);
+    if (b) { rest = slash[1]; bass = b; }
+    // "a-moll", "Fis-dur": the classical way of saying minor / major.
+    const dur = /^-?dur$/i.test(rest);
+    rest = rest.replace(/^-?moll$/i, 'm').replace(/^-?dur$/i, '');
+    // Lowercase is minor, unless the suffix already says so ("am7") or says major ("a-dur").
+    const suffixes = root.minor && !dur && !/^m(?!aj)/.test(rest) ? ['m' + rest, rest] : [rest];
+    for (const suffix of suffixes) {
+      const type = typeForSuffix(suffix);
+      if (type) return { root: root.note, type, bass, polish: true };
+    }
+  }
+  return null;
+}
+
+/** True when a symbol only makes sense in Polish/German naming ("H", "Fis", "a", "D/Fis"). */
+export const isPolishSymbol = symbol => Boolean(parseChordSymbol(symbol)?.polish);
 
 /** Build a full chord description from a symbol, or from (root, typeId[, bass]). */
 export function getChord(symbolOrRoot, typeId, bassName = null) {

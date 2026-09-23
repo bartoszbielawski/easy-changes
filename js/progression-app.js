@@ -326,7 +326,7 @@ function update() {
   $('#song').value = song < 0 ? '' : String(song);
   const { chords, errors, germanB } = parseProgression(text);
   $('#prog-errors').textContent = errors.length ? `Not recognised: ${errors.join(', ')}` : '';
-  $('#prog-note').textContent = germanB ? 'Reading B as B♭, since these chords use H (German and Polish naming). Results use B and B♭.' : '';
+  $('#prog-note').textContent = germanB ? 'Reading B as B♭, since these chords use Polish names (H, Fis, a for A minor…). Results use English names: B, B♭, F♯, Am.' : '';
   fillKeySelect(guessKey(chords, { loop: $('#loop').checked }));
   if (!chords.length) {
     result = null;
