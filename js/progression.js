@@ -57,11 +57,7 @@ export function parseProgression(text) {
   const chords = [], durations = [], errors = [];
   const hasBars = String(text).includes('|');
   for (const bar of String(text).split('|')) {
-    const tokens = bar.split(/[\s,]+/).filter(Boolean).map(token => {
-      const m = /^(.+?)(?::(\d+(?:\.\d+)?))?$/.exec(token);
-      const length = m[2] === undefined ? null : Number(m[2]);
-      return { token, chord: length === 0 ? null : getChord(m[1]), length };
-    });
+    const tokens = bar.split(/[\s,]+/).filter(Boolean).map(readToken);
     const share = 1 / Math.max(1, tokens.filter(t => t.length === null).length);
     for (const t of tokens) {
       if (!t.chord) { errors.push(t.token); continue; }
@@ -70,6 +66,29 @@ export function parseProgression(text) {
     }
   }
   return { chords, durations, errors };
+}
+
+// One chord as typed: "Am", "G/B" or "C:2" (two bars). A zero length makes it unreadable.
+function readToken(token) {
+  const m = /^(.+?)(?::(\d+(?:\.\d+)?))?$/.exec(token);
+  const length = m[2] === undefined ? null : Number(m[2]);
+  return { token, chord: length === 0 ? null : getChord(m[1]), length, lengthText: m[2] };
+}
+
+/**
+ * The progression as typed, with its chords swapped in order for `chords` (e.g. the same
+ * chords transposed): bar lines, lengths, commas and spacing stay exactly as they were,
+ * and anything that isn't a chord is left alone. Tokens are found the way
+ * parseProgression finds them, so the n-th chord it read is the n-th one replaced.
+ */
+export function replaceChords(text, chords) {
+  let k = 0;
+  return String(text).replace(/[^\s,|]+/g, token => {
+    const t = readToken(token);
+    if (!t.chord || k >= chords.length) return token;
+    const c = chords[k++];
+    return c.symbol + (t.lengthText === undefined ? '' : `:${t.lengthText}`);
+  });
 }
 
 /** Guess the key: the key that fits the chords best (see analysis.detectKeys). */

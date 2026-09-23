@@ -21,7 +21,7 @@ python tools/validate.py
 Checks the chord and scale **data**: every voicing, in every key, sounds its chord's formula
 with the right bass, and its fingering is physically possible (1049 voicings, 18 scales).
 
-Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 149 checks).
+Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 154 checks).
 Expected values are written out from theory, not computed by the code under test, and most
 checks run in all 12 keys. Add a case there whenever you change theory behaviour.
 
@@ -32,7 +32,7 @@ checks run in all 12 keys. Add a case there whenever you change theory behaviour
 | `js/theory.js` | notes, pitch classes, scale degrees, spelling (`spellDegree`), transposition |
 | `js/chords.js` | chord types, symbol parsing, voicing lookup, slash/inversion generation, `identifyChord` |
 | `js/difficulty.js` | per-voicing difficulty 1–10, `LEVELS` (Beginner…Advanced) |
-| `js/progression.js` | `parseProgression` (chords and their lengths in bars), `arrange`/`arrangeTop` (Viterbi over difficulty + transitions), `arrangeChoices` (the varied top 3: open / barre / up the neck), `rankOptions` (keys + capos), transposition |
+| `js/progression.js` | `parseProgression` (chords and their lengths in bars), `replaceChords` (the typed text with transposed chords, layout kept), `arrange`/`arrangeTop` (Viterbi over difficulty + transitions), `arrangeChoices` (the varied top 3: open / barre / up the neck), `rankOptions` (keys + capos), transposition |
 | `js/analysis.js` | key detection, Roman numerals, chord roles, root motion, named patterns, cadences |
 | `js/scales.js` | scale spelling, clash scoring, `suggestScales`, fretboard positions |
 | `js/diagram.js`, `js/fretboard.js` | SVG chord diagrams and fretboard |
@@ -57,6 +57,8 @@ checks run in all 12 keys. Add a case there whenever you change theory behaviour
 - **User-facing wording is plain English** ("grip carried over", "brief key change"), and
   every score shown has a tooltip that explains it.
 - **Comments explain why**, not what.
+- **Escape typed text** (`escapeHtml` in `progression-app.js`) before it goes into `innerHTML`:
+  shared links carry the chord box, so unknown words in it come from other people.
 
 ## Gotchas
 

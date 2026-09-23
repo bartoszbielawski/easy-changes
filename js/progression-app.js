@@ -1,4 +1,4 @@
-import { parseProgression, rankOptions, arrangeChoices, guessKey, keyName } from './progression.js';
+import { parseProgression, replaceChords, rankOptions, arrangeChoices, guessKey, keyName } from './progression.js';
 import { renderDiagram } from './diagram.js';
 import { LEVELS, levelFor } from './difficulty.js';
 import { renderLegend } from './legend.js';
@@ -137,8 +137,20 @@ function renderArrangement() {
   const differs = (alt, i) => alt.steps[i].voicing.tab !== best.steps[i].voicing.tab || alt.steps[i].played !== best.steps[i].played;
   const sounding = selected.list === 'capos' && opt.capo ? parseProgression($('#prog').value).chords : null;
 
+  // The chords in this key or with this capo, laid out as they were typed, ready to copy.
+  // Shown only when they differ from the chord box (a new key, capo shapes or respelling).
+  const typed = $('#prog').value;
+  const chordText = replaceChords(typed, opt.chords);
+  const copyValue = opt.capo ? `Capo ${opt.capo}: ${chordText}` : chordText;
+  const chordLine = chordText === typed ? '' : `
+    <p class="chord-line">
+      <span class="chord-text">${opt.capo ? `<small>capo ${opt.capo}</small> ` : ''}${escapeHtml(chordText)}</span>
+      <button type="button" class="copy-chords" data-copy="${escapeHtml(copyValue)}"
+        title="Copy these chords with your bar lines and lengths${opt.capo ? `, headed Capo ${opt.capo}` : ''}">Copy chords</button>
+    </p>`;
+
   $('#arrangement').innerHTML = `
-    <h2>${title}</h2>
+    <h2>${title}</h2>${chordLine}
     <ol class="alts" aria-label="Best voicing combinations">
       ${alts.map((alt, k) => `<li><button type="button" class="alt" data-alt="${k}" aria-pressed="${k === altIndex}">
         <span class="alt-rank">#${k + 1}</span>
@@ -264,21 +276,29 @@ function summarize(a) {
 
 // The address already holds the whole view (see writeHash), including a key or capo chosen
 // further down; the button beside the chord box just makes it easy to share.
-async function copyLink(button) {
-  const url = location.href;
-  let ok = false;
-  try { await navigator.clipboard.writeText(url); ok = true; } catch {
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch {
     // Older browsers, or a page not served over https: copy through a hidden text box.
-    const box = Object.assign(document.createElement('textarea'), { value: url });
+    const box = Object.assign(document.createElement('textarea'), { value: text });
     box.style.cssText = 'position:fixed;opacity:0';
     document.body.append(box);
     box.select();
+    let ok = false;
     try { ok = document.execCommand('copy'); } catch { ok = false; }
     box.remove();
+    return ok;
   }
-  button.textContent = ok ? 'Link copied' : 'Copy the address bar';
-  setTimeout(() => { if (button.isConnected) button.textContent = 'Copy link'; }, 2000);
 }
+
+// Copy, then say so on the button for two seconds.
+async function copyFrom(button, text, done, failed) {
+  const label = button.textContent;
+  button.textContent = (await copyText(text)) ? done : failed;
+  setTimeout(() => { if (button.isConnected) button.textContent = label; }, 2000);
+}
+
+// Typed text reaches the page (unknown words are kept in the copied chords), so escape it.
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 // Tooltips for the style label on each of the top 3.
 const STYLE_TIPS = {
@@ -355,7 +375,9 @@ $('#prog-form').addEventListener('input', e => {
 $('#prog-form').addEventListener('submit', e => e.preventDefault());
 document.addEventListener('click', e => {
   const copy = e.target.closest('button.copy-link');
-  if (copy) { copyLink(copy); return; }
+  if (copy) { copyFrom(copy, location.href, 'Link copied', 'Copy the address bar'); return; }
+  const copyChords = e.target.closest('button.copy-chords');
+  if (copyChords) { copyFrom(copyChords, copyChords.dataset.copy, 'Chords copied', 'Select and copy them'); return; }
   const ex = e.target.closest('[data-example]');
   if (ex) { loadProgression(ex.dataset.example); return; }
   const alt = e.target.closest('button.alt');

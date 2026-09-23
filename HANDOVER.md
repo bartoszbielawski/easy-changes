@@ -6,7 +6,7 @@ conventions; this file explains what exists, why it works the way it does, and w
 ## Status
 
 Everything described below is built and verified: `python tools/validate.py` passes
-(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (149 checks).
+(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (154 checks).
 Both were re-run at the time of writing.
 
 **Chords page** (`index.html`)
@@ -37,6 +37,9 @@ Both were re-run at the time of writing.
   default, and the chosen key or capo (`#chords=C+G+Am+F&level=beginner&capo=3`). Old
   chord-only links still open; bad values fall back to defaults. Sharps/flats stay per browser.
   A **Copy link** button sits above the chord box, right of its label.
+- **Copy chords**: under the arrangement heading, the chords in the chosen key or with the
+  chosen capo, laid out as typed (bars, `C:2`, sections), with a button that copies them
+  ("Capo 3: A E | F#m D:2"). Hidden when they match the chord box.
 - **Harmony and scales** sit below the voicings in one fold-out section, closed for Beginner
   and Improver, open for Intermediate and Advanced; it follows the level when that changes.
 - **Scales**: ranked suggestions, a per-chord breakdown with a one-note fix where a chord

@@ -2,7 +2,7 @@
 // from music theory, not computed by the code under test. Most checks run in all 12 keys.
 import { getChord, rootName } from '../js/chords.js';
 import { mod12 } from '../js/theory.js';
-import { parseProgression, transposeChords, arrange, arrangeChoices, DEFAULT_OPTIONS } from '../js/progression.js';
+import { parseProgression, replaceChords, transposeChords, arrange, arrangeChoices, DEFAULT_OPTIONS } from '../js/progression.js';
 import { SCALE_TYPES, makeScale, fitOverChord, suggestScales, scalePositions } from '../js/scales.js';
 import { analyzeProgression, detectKeys, romanNumeral, rootMotion } from '../js/analysis.js';
 import { TUNING } from '../js/chords.js';
@@ -439,6 +439,38 @@ suite('Top 3 variety');
   const styles = arrangeChoices(chordsOf('C G Am F')).map(a => a.style.id);
   check(`C G Am F offers open chords first, then two other approaches (${styles.join(', ')})`,
     styles[0] === 'open' && new Set(styles).size === 3, styles.join(', '));
+}
+
+// ===========================================================================
+suite('Copying transposed chords');
+// The copied chords keep the layout as typed (bar lines, lengths, commas, spacing) and
+// only the chord names change, spelled for the new key.
+{
+  const typed = 'C G | Am F:2 || Dm7 G7/B';
+  const KNOWN = [
+    [2, 'D A | Bm G:2 || Em7 A7/C#'],       // up a tone: D major, sharps
+    [-3, 'A E | F#m D:2 || Bm7 E7/G#'],     // down a minor 3rd: A major, sharps
+    [1, 'Db Ab | Bbm Gb:2 || Ebm7 Ab7/C'],  // up a semitone: Db major, flats
+  ];
+  for (const [shift, want] of KNOWN) {
+    const got = replaceChords(typed, transposeText(typed, shift));
+    check(`"${typed}" ${shift > 0 ? '+' : ''}${shift} → "${want}"`, got === want, `got "${got}"`);
+  }
+  const odd = replaceChords('C,  G  Xyz | Am', transposeText('C G Am', 2));
+  check('unknown words, commas and spacing are kept', odd === 'D,  A  Xyz | Bm', `got "${odd}"`);
+
+  // In every key: the same layout, and the text reads back as the transposed chords.
+  const layout = t => t.replace(/[^\s,|]+/g, tok => (tok.includes(':') ? `#:${tok.split(':')[1]}` : '#'));
+  const bad = [];
+  for (const text of ['C G | Am F:2 || Dm7 G7/B', 'Am | C | E7:2 | Am', 'F#m7, A, Esus4, B7sus4', 'Bb | Gm Eb | F:0.5 C:0.5']) {
+    for (let n = 0; n < 12; n++) {
+      const chords = transposeText(text, n), out = replaceChords(text, chords);
+      const back = parseProgression(out);
+      if (layout(out) !== layout(text) || back.errors.length || back.chords.map(c => c.symbol).join(' ') !== chords.map(c => c.symbol).join(' ')
+        || JSON.stringify(back.durations) !== JSON.stringify(parseProgression(text).durations)) bad.push(`${text} +${n} → ${out}`);
+    }
+  }
+  check('layout and lengths survive transposing into all 12 keys (4 progressions)', !bad.length, bad.slice(0, 3).join('; '));
 }
 
 export default results;
