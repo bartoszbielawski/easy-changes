@@ -13,7 +13,6 @@ import { parseNote } from './theory.js';
 const songData = await loadJson('songs.json');
 
 const $ = sel => document.querySelector(sel);
-const EXAMPLES = ['C G Am F', 'Bb Gm Eb F', 'F#m D A E', 'Dm7 G7 Cmaj7 A7', 'Ab Fm Db Eb', 'Em C G D'];
 // Harder real-world progressions to try the optimizer on (data/songs.json).
 const SONGS = songData.songs;
 
@@ -25,8 +24,6 @@ let positionIndex = 0;
 let selected = { list: 'keys', shift: 0 };
 const isSelected = (o, list) => selected.list === list && (list === 'keys' ? o.shift === selected.shift : o.capo === selected.capo);
 
-$('#examples').insertAdjacentHTML('afterbegin',
-  EXAMPLES.map(e => `<button type="button" data-example="${e}">${e}</button>`).join(''));
 // Songs are grouped by style, in the order the data file first mentions each style.
 for (const style of new Set(SONGS.map(s => s.style))) {
   const group = document.createElement('optgroup');
@@ -89,34 +86,47 @@ function relEffort(cost, ref) {
   return pct === 0 ? 'same' : pct > 0 ? `+${pct}%` : `−${-pct}%`;
 }
 
-function optionRow(opt, list, index, best, range) {
+function optionRow(opt, list, index, best, afterGap = false) {
   const a = opt.arrangement;
   const label = list === 'keys'
     ? `${opt.key} <small>${opt.shift === 0 ? 'original' : (opt.shift > 0 ? '+' : '') + opt.shift}</small>`
     : `${opt.capo === 0 ? 'No capo' : `Capo ${opt.capo}`} <small>${opt.shapesKey} shapes</small>`;
   const chords = opt.chords.map((c, i) => a.feasible && a.steps[i].played !== c.symbol ? `<s>${c.symbol}</s>→${a.steps[i].played}` : c.symbol);
-  // Bar spans the range between the least and most effort shown, so differences are visible.
-  const bar = a.feasible ? 12 + 88 * (a.cost - range.min) / Math.max(1e-9, range.max - range.min) : 0;
-  return `<li><button type="button" class="option${a.feasible ? '' : ' infeasible'}" data-list="${list}" data-index="${index}" aria-pressed="${isSelected(opt, list)}">
+  return `<li${afterGap ? ' class="after-gap"' : ''}><button type="button" class="option${a.feasible ? '' : ' infeasible'}" data-list="${list}" data-index="${index}" aria-pressed="${isSelected(opt, list)}">
     <span class="opt-label">${label}</span>
     <span class="opt-chords">${[...new Set(chords)].join(' ')}</span>
     ${a.feasible
-      ? `<span class="opt-meter"><span style="width:${bar}%"></span></span>
-         <span class="opt-score" title="Total effort ${a.cost.toFixed(1)}, relative to the top pick"><span class="badge ${a.level}" title="Can be played at ${a.levelName} level">${a.levelName}</span> <span class="effort">${index === 0 && opt.arrangement.cost === best ? 'top pick' : relEffort(a.cost, best)}</span></span>`
+      ? `<span class="opt-score" title="Total effort ${a.cost.toFixed(1)}, relative to the top pick"><span class="badge ${a.level}" title="Can be played at ${a.levelName} level">${a.levelName}</span> <span class="effort">${index === 0 && opt.arrangement.cost === best ? 'top pick' : relEffort(a.cost, best)}</span></span>`
       : `<span class="opt-score">can't play ${[...new Set(a.unplayable)].join(', ')}</span>`}
   </button></li>`;
 }
 
+// Each list shows its top 3, the original key (or no capo) to compare against, and the
+// selected option wherever it ranks; "Show all" opens the rest.
+const expanded = { keys: false, capos: false };
+const isOriginal = (o, list) => (list === 'keys' ? o.shift === 0 : o.capo === 0);
+
+function rankingRows(list, best) {
+  const rows = result[list].map((o, i) => [o, i])
+    .filter(([o, i]) => expanded[list] || i < 3 || isOriginal(o, list) || isSelected(o, list));
+  const hidden = result[list].length - rows.length;
+  const button = document.querySelector(`button.show-all[data-list="${list}"]`);
+  const noun = list === 'keys' ? 'keys' : 'capo positions';
+  button.hidden = !expanded[list] && hidden === 0;
+  button.textContent = expanded[list] ? 'Show fewer' : `Show all ${result[list].length} ${noun}`;
+  button.setAttribute('aria-expanded', expanded[list]);
+  // A row shown out of rank order (e.g. the original key at #7) sits after a gap, so the
+  // list doesn't read as if it ranked 4th.
+  return rows.map(([o, i], n) => optionRow(o, list, i, best, n > 0 && i > rows[n - 1][1] + 1)).join('');
+}
+
 function renderRankings() {
-  const all = [...result.keys, ...result.capos].filter(o => o.arrangement.feasible);
   // Both lists are sorted easiest first; effort is shown relative to the overall top option.
   const top = [result.keys[0], result.capos[0]].filter(o => o.arrangement.feasible)
     .sort((x, y) => levelIndex(x) - levelIndex(y) || x.arrangement.cost - y.arrangement.cost)[0];
   const best = top ? top.arrangement.cost : 1;
-  const costs = all.map(o => o.arrangement.cost);
-  const range = { min: Math.min(...costs), max: Math.max(...costs) };
-  $('#keys').innerHTML = result.keys.map((o, i) => optionRow(o, 'keys', i, best, range)).join('');
-  $('#capos').innerHTML = result.capos.map((o, i) => optionRow(o, 'capos', i, best, range)).join('');
+  $('#keys').innerHTML = rankingRows('keys', best);
+  $('#capos').innerHTML = rankingRows('capos', best);
 }
 
 function renderArrangement() {
@@ -145,8 +155,8 @@ function renderArrangement() {
   const chordLine = chordText === typed ? '' : `
     <p class="chord-line">
       <span class="chord-text">${opt.capo ? `<small>capo ${opt.capo}</small> ` : ''}${escapeHtml(chordText)}</span>
-      <button type="button" class="copy-chords" data-copy="${escapeHtml(copyValue)}"
-        title="Copy these chords with your bar lines and lengths${opt.capo ? `, headed Capo ${opt.capo}` : ''}">Copy chords</button>
+      <button type="button" class="copy-chords icon-btn" data-copy="${escapeHtml(copyValue)}" aria-label="Copy chords"
+        title="Copy these chords with your bar lines and lengths${opt.capo ? `, headed Capo ${opt.capo}` : ''}">${ICONS.copy}</button>
     </p>`;
 
   $('#arrangement').innerHTML = `
@@ -291,10 +301,28 @@ async function copyText(text) {
 }
 
 // Copy, then say so on the button for two seconds.
-async function copyFrom(button, text, done, failed) {
-  const label = button.textContent;
-  button.textContent = (await copyText(text)) ? done : failed;
-  setTimeout(() => { if (button.isConnected) button.textContent = label; }, 2000);
+// Small line icons for the copy buttons, drawn in the text colour. The buttons carry an
+// aria-label and a tooltip, since an icon alone doesn't say what it copies.
+const icon = paths => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+const ICONS = {
+  link: icon('<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.1 1.1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.1-1.1"/>'),
+  copy: icon('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),
+  done: icon('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+};
+
+// Copy, then show a tick on the button for two seconds (or say what to do if it failed).
+async function copyFrom(button, text, failed) {
+  const html = button.innerHTML, label = button.getAttribute('aria-label');
+  const ok = await copyText(text);
+  button.innerHTML = ok ? ICONS.done : failed;
+  button.setAttribute('aria-label', ok ? 'Copied' : failed);
+  button.classList.toggle('done', ok);
+  setTimeout(() => {
+    if (!button.isConnected) return;
+    button.innerHTML = html;
+    button.setAttribute('aria-label', label);
+    button.classList.remove('done');
+  }, 2000);
 }
 
 // Typed text reaches the page (unknown words are kept in the copied chords), so escape it.
@@ -318,9 +346,36 @@ function moveLabel(m) {
   return `<div class="move ${m.kind}" title="${title}">→<small>${MOVE_TEXT[m.kind]}</small>${detail ? `<small>${detail}</small>` : ''}</div>`;
 }
 
+// The folded settings, named in plain words when they differ from the defaults.
+function changedExtras() {
+  const v = id => $(id).value;
+  const parts = [];
+  if (v('#key') && v('#key') !== 'auto') parts.push(`key ${$('#key').selectedOptions[0].text}`);
+  if (v('#avoid').trim()) parts.push(`avoid ${v('#avoid').trim()}`);
+  if (v('#accidentals') !== 'auto') parts.push(v('#accidentals') === 'flat' ? 'flats' : 'sharps');
+  if (v('#max-capo') !== '7') parts.push(`capo up to ${v('#max-capo') || 0}`);
+  if ($('#simplify').checked) parts.push('simpler chords allowed');
+  if ($('#inversions').checked) parts.push('inversions allowed');
+  if (!$('#loop').checked) parts.push("doesn't repeat");
+  return parts;
+}
+
+function syncMoreOptions() {
+  const open = !$('#more-options').hidden, parts = changedExtras();
+  $('#more-toggle').textContent = open ? 'Fewer options' : parts.length ? `More options (${parts.length} set)` : 'More options';
+  $('#more-toggle').setAttribute('aria-expanded', open);
+  $('#more-summary').textContent = !open && parts.length ? `Also set: ${parts.join(' · ')}` : '';
+}
+
+function toggleMoreOptions() {
+  $('#more-options').hidden = !$('#more-options').hidden;
+  syncMoreOptions();
+}
+
 function update() {
   const text = $('#prog').value;
   writeHash();
+  syncMoreOptions();
   // The picker names a song only while the chords are still that song's.
   const song = SONGS.findIndex(s => chordKey(s.chords) === chordKey(text));
   $('#song').value = song < 0 ? '' : String(song);
@@ -360,14 +415,8 @@ function selectOriginal() {
   renderArrangement();
 }
 
-// Harmony and scales start folded for Beginner and Improver, open for higher levels. It
-// follows the level when that changes; opening or closing it by hand works as usual.
-const LEVEL_OPENS_THEORY = new Set(['intermediate', 'advanced']);
-const syncTheory = () => { $('#theory').open = LEVEL_OPENS_THEORY.has(LEVELS[$('#max').selectedIndex].id); };
-
 $('#accidentals').value = getAccidentals();
 $('#prog-form').addEventListener('input', e => {
-  if (e.target.id === 'max') syncTheory();
   if (e.target.id === 'song') { if (e.target.value) loadProgression(SONGS[e.target.value].chords); return; }
   if (e.target.id === 'accidentals') setAccidentals(e.target.value);
   update();
@@ -375,12 +424,18 @@ $('#prog-form').addEventListener('input', e => {
 });
 $('#prog-form').addEventListener('submit', e => e.preventDefault());
 document.addEventListener('click', e => {
+  // The chord hint toggles on tap (touch has no hover) and closes on any click elsewhere.
+  const info = e.target.closest('button.info');
+  if (info) { const open = info.getAttribute('aria-expanded') !== 'true'; info.setAttribute('aria-expanded', open); $('#prog-hint').classList.toggle('open', open); return; }
+  if (!e.target.closest('.hint-pop')) { $('button.info').setAttribute('aria-expanded', 'false'); $('#prog-hint').classList.remove('open'); }
+  const showAll = e.target.closest('button.show-all');
+  if (showAll) { expanded[showAll.dataset.list] = !expanded[showAll.dataset.list]; renderRankings(); return; }
+  const more = e.target.closest('#more-toggle');
+  if (more) { toggleMoreOptions(); return; }
   const copy = e.target.closest('button.copy-link');
-  if (copy) { copyFrom(copy, location.href, 'Link copied', 'Copy the address bar'); return; }
+  if (copy) { copyFrom(copy, location.href, 'Copy the address bar'); return; }
   const copyChords = e.target.closest('button.copy-chords');
-  if (copyChords) { copyFrom(copyChords, copyChords.dataset.copy, 'Chords copied', 'Select and copy them'); return; }
-  const ex = e.target.closest('[data-example]');
-  if (ex) { loadProgression(ex.dataset.example); return; }
+  if (copyChords) { copyFrom(copyChords, copyChords.dataset.copy, 'Select and copy them'); return; }
   const alt = e.target.closest('button.alt');
   const scaleBtn = e.target.closest('button[data-scale]');
   if (scaleBtn) { scaleIndex = Number(scaleBtn.dataset.scale); positionIndex = 0; renderArrangement(); return; }
@@ -488,11 +543,11 @@ function applyHash() {
   renderArrangement();
 }
 
+$('.copy-link').innerHTML = ICONS.link;
 applyHash();
-syncTheory();
 // Back/forward and edits to the address change the hash without reloading; follow them.
 // (The page writes the hash with replaceState, which doesn't fire this, so there is no loop.)
-window.addEventListener('hashchange', () => { applyHash(); syncTheory(); });
+window.addEventListener('hashchange', applyHash);
 
 // Tells the guard script in the page head that everything loaded and ran.
 window.easyChangesReady = true;

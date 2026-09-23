@@ -50,35 +50,31 @@
       <div class="field wide">
         <!-- Not inside a <label>: a click anywhere in a label would also focus the chord box. -->
         <div class="field-head">
-          <label for="prog">Chords</label>
-          <button type="button" class="copy-link" title="Copy a link to this progression with your settings and the chosen key or capo">Copy link</button>
+          <span class="label-group">
+            <label for="prog">Chords</label>
+            <!-- The how-to-type hint opens on hover or focus (CSS) and toggles on tap (JS). -->
+            <button type="button" class="info" aria-label="How to type chords" aria-expanded="false" aria-controls="prog-hint">i</button>
+            <span class="hint-pop" id="prog-hint" role="note">Separate chords with spaces. Each counts one bar; to show that some last longer, add bar lines (<code>C | G Am | F</code>) or a length in bars (<code>C:2</code>). Polish names work too (<code>a C d G</code>, <code>Fis</code>, <code>H7</code>).</span>
+          </span>
+          <label class="song-pick"><span>Song</span>
+            <select id="song"><option value="">Pick a song…</option></select>
+          </label>
+          <button type="button" class="copy-link icon-btn" aria-label="Copy link" title="Copy a link to this progression with your settings and the chosen key or capo">Copy link</button>
         </div>
         <input id="prog" placeholder="e.g. C G Am F  or  Bb | Gm | Eb | F" spellcheck="false" aria-describedby="prog-hint">
       </div>
-      <p class="hint" id="prog-hint">Chords count one bar each. To show that some last longer, add bar lines (<code>C | G Am | F</code>) or a length in bars (<code>C:2</code>).</p>
-      <div class="examples" id="examples">
-        <label class="song-pick"><span>Song</span>
-          <select id="song"><option value="">Pick a song…</option></select>
-        </label>
-      </div>
 
+      <!-- The two settings that change results most stay in view; the rest fold away, and a
+           line under them names any that are changed, so nothing is set invisibly. -->
       <div class="options">
-        <label class="field">
-          <span>Key</span>
-          <select id="key"></select>
-        </label>
-        <label class="field">
+        <label class="field" title="The hardest chords you want to play; Advanced allows any chord">
           <span>My level</span>
           <select id="max">
             <option value="3">Beginner</option>
             <option value="4.5">Improver</option>
             <option value="6.5">Intermediate</option>
-            <option value="10" selected>Advanced (anything)</option>
+            <option value="10" selected>Advanced</option>
           </select>
-        </label>
-        <label class="field">
-          <span>Chords to avoid</span>
-          <input id="avoid" placeholder="e.g. F Bm" spellcheck="false">
         </label>
         <label class="field">
           <span>Barre chords</span>
@@ -88,23 +84,37 @@
             <option value="easy">Easy for me</option>
           </select>
         </label>
-        <label class="field">
-          <span>Sharps / flats</span>
-          <select id="accidentals">
-            <option value="auto">Auto (by key)</option>
-            <option value="flat">♭ Flats</option>
-            <option value="sharp">♯ Sharps</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>Highest capo</span>
-          <input id="max-capo" type="number" min="0" max="11" value="7">
-        </label>
+        <button type="button" class="more-toggle" id="more-toggle" aria-expanded="false" aria-controls="more-options">More options</button>
       </div>
-      <div class="checks">
-        <label><input type="checkbox" id="simplify"> Allow simpler chords (Cmaj7 → C)</label>
-        <label><input type="checkbox" id="inversions"> Allow inversions (C → C/G)</label>
-        <label><input type="checkbox" id="loop" checked> Progression repeats</label>
+      <p class="hint" id="more-summary"></p>
+      <div class="more-options" id="more-options" hidden>
+        <div class="options">
+          <label class="field">
+            <span>Key</span>
+            <select id="key"></select>
+          </label>
+          <label class="field">
+            <span>Chords to avoid</span>
+            <input id="avoid" placeholder="e.g. F Bm" spellcheck="false">
+          </label>
+          <label class="field">
+            <span>Sharps / flats</span>
+            <select id="accidentals">
+              <option value="auto">Auto (by key)</option>
+              <option value="flat">♭ Flats</option>
+              <option value="sharp">♯ Sharps</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Highest capo</span>
+            <input id="max-capo" type="number" min="0" max="11" value="7">
+          </label>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="simplify"> Allow simpler chords (Cmaj7 → C)</label>
+          <label><input type="checkbox" id="inversions"> Allow inversions (C → C/G)</label>
+          <label><input type="checkbox" id="loop" checked> Progression repeats</label>
+        </div>
       </div>
       <p id="prog-errors" class="error" aria-live="polite"></p>
       <p id="prog-note" class="hint" aria-live="polite"></p>
@@ -112,20 +122,20 @@
 
     <section class="rankings">
       <div>
-        <h2>Change key</h2>
-        <p class="hint">Transpose everything, no capo.</p>
+        <h2 title="Transpose every chord to a new key, no capo. The song sounds higher or lower.">Change key</h2>
         <ol id="keys" class="options-list"></ol>
+        <button type="button" class="show-all" data-list="keys"></button>
       </div>
       <div>
-        <h2>Keep key, use a capo</h2>
-        <p class="hint">Same sound, easier shapes.</p>
+        <h2 title="Keep the song's key and play easier shapes with a capo. It sounds the same.">Use a capo <small>same key</small></h2>
         <ol id="capos" class="options-list"></ol>
+        <button type="button" class="show-all" data-list="capos"></button>
       </div>
     </section>
 
     <section id="arrangement" aria-live="polite"></section>
     <!-- Harmony and scales explain the progression; they matter more to experienced players,
-         so they come after what to play and start folded away for Beginner and Improver levels. -->
+         so they come after what to play and start folded away. -->
     <details class="theory" id="theory">
       <summary><span class="theory-title">Harmony and scales</span> <span class="hint">the theory behind these chords: the key, what each chord does, and scales to solo with</span></summary>
       <section id="harmony" aria-live="polite"></section>

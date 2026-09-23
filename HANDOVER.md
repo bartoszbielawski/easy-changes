@@ -30,9 +30,14 @@ Both were re-run at the time of writing.
 - **Chord lengths**: `C:2` (bars) or bar lines (`C | G Am` = 1, ½, ½). Changes cost the same
   however long a chord lasts; each bar beyond the first adds `sustain` (0.25) of its difficulty.
 - **Key and capo rankings**: every key and every capo position, rated by the lowest level
-  it can be played at, then by effort relative to the top pick.
-- **Options**: My level, barre comfort, chords to avoid, highest capo, simpler chords,
-  inversions, repeats, sharps/flats.
+  it can be played at, then by effort relative to the top pick. Each list shows its top 3,
+  the original key (or no capo) and the selected option; "Show all" opens the rest. A row
+  shown out of rank order sits after a small gap; no effort bars, just level and %.
+- **Chord box row**: "Chords" label, an ⓘ whose how-to-type hint opens on hover, focus or tap,
+  the Song dropdown, and a link icon (Copy link). No example chips. Copy chords is a pages icon.
+- **Options**: My level and barre comfort in view; key, chords to avoid, sharps/flats,
+  highest capo, simpler chords, inversions and repeats under "More options", whose button
+  counts and a line names any that are changed while folded.
 - **Shareable links**: the address holds the chords, every setting that differs from its
   default, and the chosen key or capo (`#chords=C+G+Am+F&level=beginner&capo=3`). Old
   chord-only links still open; bad values fall back to defaults. Sharps/flats stay per browser.
@@ -45,8 +50,7 @@ Both were re-run at the time of writing.
   mixed spellings like `H#` or `f#`. English is always tried first. A progression with any
   Polish-only chord has its plain B read as B♭ (noted under the chord box). Results stay in
   English names. A chart with only uppercase letters and B ("F B C") is read the English way.
-- **Harmony and scales** sit below the voicings in one fold-out section, closed for Beginner
-  and Improver, open for Intermediate and Advanced; it follows the level when that changes.
+- **Harmony and scales** sit below the voicings in one fold-out section, closed by default.
 - **Scales**: ranked suggestions, a per-chord breakdown with a one-note fix where a chord
   doesn't fit, and a fretboard with the easiest hand position.
 - **Song presets** (`data/songs.json`): 36 progressions (30 rock & pop, 6 jazz), chords only; 18 have

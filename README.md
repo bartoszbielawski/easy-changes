@@ -39,14 +39,13 @@ Then open http://localhost:8000. You can link straight to a chord, e.g. `#F%23m7
   - a **shareable address**: it carries the chords, any changed settings and the chosen key or capo, so a link opens exactly what you see; **Copy link** copies it
   - **Copy chords**: the chords in the chosen key or with the chosen capo, with your bar lines and lengths kept, ready to paste
   - **Polish and German chord names**: H (= B), Fis, Cis, Es, As…, and lowercase minor chords as in Polish songbooks (`a C d G` = Am C Dm G). In a progression that uses them, a plain B means B♭, and a note says so; results are shown with English names
-  - harmony and scales come last, in a section that starts folded for Beginner and Improver levels
+  - harmony and scales come last, in a section that starts folded
   - **scale suggestions** for soloing over the progression:
     - ranked by clashes (scale notes a half-step above a chord tone), coverage of the chord tones, and relevance to the key
     - blues progressions get minor pentatonic / blues, and dominant chords accept b9 / b13
     - for each chord, the mode the scale plays as, the notes to watch, and a one-note fix where it doesn't fit (e.g. A7 in C → A mixolydian b6, C# for C)
     - a fretboard with the easiest hand position, chosen to be near where you play the chords
-  - every key ranked by ease (changing key)
-  - every capo position ranked by ease (keeping the key)
+  - every key ranked by ease (changing key) and every capo position ranked by ease (keeping the key); each list shows its top 3 plus the original, with the rest a click away
   - optional limits: a difficulty cap, no full barres, chords to avoid, and simpler substitutes
   - slash chords (G/B, D/F#) played with their real bass; optionally, inversions where they make changes smoother
 
