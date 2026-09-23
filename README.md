@@ -18,12 +18,12 @@ Then open http://localhost:8000. You can link straight to a chord, e.g. `#F%23m7
 
 ## Pages
 
-- **Chords** (`index.html`): look up any chord and see its voicings, easiest first. Pick a bass note for inversions (C/E, C/G) or slash chords (C/D).
+- **Chords** (`chords.html`): look up any chord and see its voicings, easiest first. Pick a bass note for inversions (C/E, C/G) or slash chords (C/D).
 - **Sharps / flats** (both pages, remembered in the browser):
   - *Auto:* the chord page spells by chord type (Db, Eb, Ab, Bb for major; C#m, G#m for minor; sharps for diminished), and the progression page spells by key
   - *♭ / ♯:* always flats or always sharps
   - a chord you type keeps your spelling
-- **Progression** (`progression.html`): enter a progression, e.g. `Bb Gm Eb F`, or pick one of the built-in songs from the dropdown (Hotel California, Wonderwall, Autumn Leaves, Blue Bossa, So What…) to get:
+- **Progression** (`index.html`, the home page): enter a progression, e.g. `Bb Gm Eb F`, or pick one of the built-in songs from the dropdown (Hotel California, Wonderwall, Autumn Leaves, Blue Bossa, So What…) to get:
   - **harmony analysis**:
     - the key, detected from how well each key fits the chords, plus V→I and ii–V–I resolutions (the picker can override it)
     - Roman numerals with inversions (I–V–vi–IV, V⁶, IV⁶₄)

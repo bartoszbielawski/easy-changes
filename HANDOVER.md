@@ -9,7 +9,7 @@ Everything described below is built and verified: `python tools/validate.py` pas
 (1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (181 checks).
 Both were re-run at the time of writing.
 
-**Chords page** (`index.html`)
+**Chords page** (`chords.html`, the second tab)
 - 29 chord types × 12 roots = 348 chords, 1020 root-position voicings from the data file.
 - Inversions and slash chords are **generated** on demand (2195 inversion voicings across
   the database): low strings are muted, or a bass note is added on a lower string using an
@@ -19,7 +19,7 @@ Both were re-run at the time of writing.
 - Sharps/flats: **Auto / ♭ / ♯**, remembered per browser. Auto spells by chord type
   (Db, Eb, Ab, Bb for major chords; C#m, G#m for minor; sharps for diminished).
 
-**Progression page** (`progression.html`)
+**Progression page** (`index.html`, the home page; `progression.html` redirects here)
 - **Harmony**: key detection, Roman numerals with inversion figures, chord roles (tonic /
   subdominant / dominant, secondary dominants, borrowed chords, tritone substitutions,
   brief key changes), root motion, named patterns, cadences.

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chords · Easy Changes</title>
+  <meta name="description" content="Look up any guitar chord and see every way to play it, including inversions and slash chords, sorted from easiest to hardest.">
+  <!-- Link previews (chat apps, social sites) need absolute URLs and a PNG, not SVG. -->
+  <meta property="og:site_name" content="Easy Changes">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Easy Changes: guitar chords made easy">
+  <meta property="og:description" content="Look up any guitar chord and see every way to play it, including inversions and slash chords, sorted from easiest to hardest.">
+  <meta property="og:url" content="https://bartoszbielawski.github.io/easy-changes/chords.html">
+  <meta property="og:image" content="https://bartoszbielawski.github.io/easy-changes/img/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="An orange guitar pick with an arrow, next to the words Easy Changes">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preload" href="data/chord-types.json" as="fetch" crossorigin>
+  <link rel="preload" href="data/guitar-voicings.json" as="fetch" crossorigin>
+  <script>
+    // If the page's modules fail before the app starts, the page would stay empty. Their
+    // errors still reach window, so recover or explain instead. Plain ES5 on purpose.
+    //
+    // The usual cause is not an old browser but a stale cache: GitHub Pages lets browsers
+    // keep files for 10 minutes, so right after a deploy a returning visitor can get the
+    // new page with an old script. So the first failure in a tab re-downloads everything
+    // the page loaded, bypassing the cache, and reloads once. The app clears the flag once
+    // it has started, so the next deploy can recover the same way.
+    window.showUnsupported = function (e) {
+      var note = document.getElementById('unsupported');
+      if (window.easyChangesReady || window.easyChangesRefreshing || !note) return;
+      // Retry only if the attempt can be recorded; otherwise a real fault would reload forever.
+      var retry = false;
+      try {
+        if (e && !sessionStorage.getItem('easyChangesRefreshed')) {
+          sessionStorage.setItem('easyChangesRefreshed', '1');
+          retry = true;
+        }
+      } catch (err) { retry = false; }
+      if (retry && window.fetch && window.Promise && window.performance && performance.getEntriesByType) {
+        window.easyChangesRefreshing = true;
+        var urls = [location.href.split('#')[0]];
+        var entries = performance.getEntriesByType('resource');
+        for (var i = 0; i < entries.length; i++) {
+          if (/\.(js|json|css)(\?|$)/.test(entries[i].name)) urls.push(entries[i].name);
+        }
+        Promise.all(urls.map(function (u) { return fetch(u, { cache: 'reload' }).catch(function () {}); }))
+          .then(function () { location.reload(); });
+        return;
+      }
+      document.documentElement.className += ' unsupported';
+      note.hidden = false;
+      // Name the error, so a report of this message says what actually went wrong.
+      if (e && e.message && !note.querySelector('small')) {
+        var detail = document.createElement('small');
+        detail.className = 'error-detail';
+        detail.textContent = e.message + (e.filename ? ' (' + e.filename.split('/').pop() + ', line ' + e.lineno + ')' : '');
+        note.appendChild(detail);
+      }
+    };
+    window.addEventListener('error', window.showUnsupported);
+  </script>
+  <noscript><style>main > :not(noscript), footer { display: none !important; }</style></noscript>
+</head>
+<body>
+  <header>
+    <h1><img class="logo" src="img/logo.svg" alt="">Easy Changes</h1>
+    <nav><a href="index.html">Progression</a><a href="chords.html" aria-current="page">Chords</a></nav>
+  </header>
+
+  <main>
+    <noscript><p class="notice">Easy Changes works out chords and voicings in your browser, so it needs JavaScript. Turn JavaScript on for this site and reload the page.</p></noscript>
+    <p class="notice" id="unsupported" hidden>Easy Changes couldn't start. Reload the page to try again. If it still doesn't work, your browser may be too old: the site needs one from 2021 or later, such as a current Chrome, Edge, Firefox or Safari.</p>
+    <form id="search" class="entry" autocomplete="off">
+      <label class="field wide">
+        <span>Chord</span>
+        <input id="symbol" name="symbol" placeholder="e.g. F#m7, Bbmaj7, G7/B" spellcheck="false">
+      </label>
+    </form>
+
+    <section class="pickers">
+      <div class="picker-row"><span class="row-label">Root</span><div class="picker" id="roots" role="group" aria-label="Root"></div></div>
+      <div class="picker-row"><span class="row-label">Type</span><div class="picker types" id="types" role="group" aria-label="Chord type"></div></div>
+      <div class="picker-row"><span class="row-label">Bass</span><div class="picker" id="bass" role="group" aria-label="Bass note"></div></div>
+    </section>
+
+    <section id="chord-info" aria-live="polite"></section>
+    <section id="voicings" class="voicing-grid"></section>
+  </main>
+
+  <footer>
+    <div id="legend"></div>
+    <p id="stats"></p>
+  </footer>
+  <script type="module" src="js/app.js"></script>
+  <script nomodule>window.showUnsupported();</script>
+</body>
+</html>

@@ -10,7 +10,8 @@ python -m http.server 8000
 ```
 
 ES modules and the `fetch` of data files do not work from `file://`, so the server is required.
-Pages: http://localhost:8000 (chords), `/progression.html` (planner), `/tests/` (test suite).
+Pages: http://localhost:8000 (planner, `index.html`), `/chords.html` (chord lookup), `/tests/` (test suite).
+`progression.html` only redirects to `index.html`, keeping the `#…` part, for old shared links.
 
 ## Verify before finishing — both must pass
 
