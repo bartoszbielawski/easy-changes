@@ -324,8 +324,9 @@ function update() {
   // The picker names a song only while the chords are still that song's.
   const song = SONGS.findIndex(s => chordKey(s.chords) === chordKey(text));
   $('#song').value = song < 0 ? '' : String(song);
-  const { chords, errors } = parseProgression(text);
+  const { chords, errors, germanB } = parseProgression(text);
   $('#prog-errors').textContent = errors.length ? `Not recognised: ${errors.join(', ')}` : '';
+  $('#prog-note').textContent = germanB ? 'Reading B as B♭, since these chords use H (German and Polish naming). Results use B and B♭.' : '';
   fillKeySelect(guessKey(chords, { loop: $('#loop').checked }));
   if (!chords.length) {
     result = null;

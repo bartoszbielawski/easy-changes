@@ -38,6 +38,7 @@ Then open http://localhost:8000. You can link straight to a chord, e.g. `#F%23m7
   - **chord lengths**: `C:2` lasts two bars, and bar lines share a bar (`C | G Am` = 1, ½, ½). A long hard chord counts more than a passing one; changes cost the same either way
   - a **shareable address**: it carries the chords, any changed settings and the chosen key or capo, so a link opens exactly what you see; **Copy link** copies it
   - **Copy chords**: the chords in the chosen key or with the chosen capo, with your bar lines and lengths kept, ready to paste
+  - **H chords** (German and Polish naming) are read as B; in a progression that uses H, a plain B is read as B♭, and a note says so
   - harmony and scales come last, in a section that starts folded for Beginner and Improver levels
   - **scale suggestions** for soloing over the progression:
     - ranked by clashes (scale notes a half-step above a chord tone), coverage of the chord tones, and relevance to the key
@@ -84,6 +85,7 @@ Open http://localhost:8000/tests/ to run the music-theory test suite ([tests/tes
 - chord lengths: parsing, one-bar lengths leaving every score unchanged, and longer chords never lowering the effort or changing the level
 - the top 3: #1 still the cheapest, no repeats, and real alternatives for four-chord loops in every key
 - copying transposed chords: spelling in the new key, and bar lines, lengths and spacing kept in all 12 keys
+- H naming: H chords as B, and B as B♭ only in progressions that use H
 
 ## Library (`js/`)
 

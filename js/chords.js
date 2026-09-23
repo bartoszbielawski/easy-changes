@@ -41,20 +41,25 @@ export function getChordType(id) {
   return t;
 }
 
+// German, Polish, Czech and Scandinavian charts call B natural "H". It is read as B and
+// shown as B. (In those charts a plain "B" means B-flat; parseProgression handles that,
+// since only the rest of the progression can tell which naming a "B" is in.)
+const englishLetter = note => note.replace(/^H/, 'B');
+
 /**
- * Parse a chord symbol such as "C", "F#m7", "Bbmaj7", "Dm7b5", "G7/B", "C6/9".
+ * Parse a chord symbol such as "C", "F#m7", "Bbmaj7", "Dm7b5", "G7/B", "C6/9", "H7".
  * Returns null if the symbol is not recognised.
  */
 export function parseChordSymbol(symbol) {
   const s = String(symbol).trim().replace(/♯/g, '#').replace(/♭/g, 'b');
-  const m = /^([A-G](?:#|b)?)(.*)$/.exec(s);
+  const m = /^([A-H](?:#|b)?)(.*)$/.exec(s);
   if (!m) return null;
-  const root = parseNote(m[1]);
+  const root = parseNote(englishLetter(m[1]));
   let rest = m[2].trim();
   let bass = null;
   // A trailing "/X" where X is a note is a bass note ("6/9" is not, since 9 is not a note).
-  const slash = /^(.*)\/([A-G](?:#|b)?)$/.exec(rest);
-  if (slash) { rest = slash[1]; bass = parseNote(slash[2]); }
+  const slash = /^(.*)\/([A-H](?:#|b)?)$/.exec(rest);
+  if (slash) { rest = slash[1]; bass = parseNote(englishLetter(slash[2])); }
   const type = TYPE_BY_SUFFIX.get(rest) ?? TYPE_BY_SUFFIX.get(rest.replace(/[()]/g, ''));
   if (!type) return null;
   return { root, type, bass };

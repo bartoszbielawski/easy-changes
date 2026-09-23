@@ -21,7 +21,7 @@ python tools/validate.py
 Checks the chord and scale **data**: every voicing, in every key, sounds its chord's formula
 with the right bass, and its fingering is physically possible (1049 voicings, 18 scales).
 
-Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 154 checks).
+Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 163 checks).
 Expected values are written out from theory, not computed by the code under test, and most
 checks run in all 12 keys. Add a case there whenever you change theory behaviour.
 
@@ -75,6 +75,9 @@ checks run in all 12 keys. Add a case there whenever you change theory behaviour
 - **A page that fails to start shows a message, not a blank page.** A small ES5 script in each
   page head listens for errors until the app sets `window.easyChangesReady = true` at the end of
   `app.js` / `progression-app.js`. Keep that line last, and keep the head script ES5.
+- **H is B natural** (German/Polish naming), read in `parseChordSymbol`. In a progression that
+  contains an H, a plain B means B♭ (`readToken` in `progression.js`) and a note says so;
+  without an H, B is B natural. Results are always shown with English names.
 - **Enharmonic spelling is deliberate.** `rootName()` in `chords.js` spells by chord type in
   Auto; scales pick the root spelling with fewest accidentals, or the progression's own
   spelling. G# harmonic minor keeps its F##; that is correct.

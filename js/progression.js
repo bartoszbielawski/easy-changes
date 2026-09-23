@@ -56,8 +56,11 @@ const MINOR_KEY_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', '
 export function parseProgression(text) {
   const chords = [], durations = [], errors = [];
   const hasBars = String(text).includes('|');
+  const german = usesGermanNames(text);
+  let germanB = false;
   for (const bar of String(text).split('|')) {
-    const tokens = bar.split(/[\s,]+/).filter(Boolean).map(readToken);
+    const tokens = bar.split(/[\s,]+/).filter(Boolean).map(token => readToken(token, german));
+    germanB = germanB || tokens.some(t => t.germanB);
     const share = 1 / Math.max(1, tokens.filter(t => t.length === null).length);
     for (const t of tokens) {
       if (!t.chord) { errors.push(t.token); continue; }
@@ -65,14 +68,23 @@ export function parseProgression(text) {
       durations.push(t.length ?? (hasBars ? share : 1));
     }
   }
-  return { chords, durations, errors };
+  // germanB: a plain B was read as B-flat because the progression uses H (see readToken).
+  return { chords, durations, errors, germanB };
 }
 
+// A progression with an H chord in it (root or bass) is written in German/Polish naming.
+const usesGermanNames = text => /(^|[\s,|/])H/.test(String(text));
+
 // One chord as typed: "Am", "G/B" or "C:2" (two bars). A zero length makes it unreadable.
-function readToken(token) {
+// In German naming a plain B, as root or bass, is B-flat ("B" = Bb, "Bm" = Bbm, "F/B" = F/Bb);
+// an explicit Bb or B# keeps its meaning, and H itself is read by parseChordSymbol.
+function readToken(token, german = false) {
   const m = /^(.+?)(?::(\d+(?:\.\d+)?))?$/.exec(token);
   const length = m[2] === undefined ? null : Number(m[2]);
-  return { token, chord: length === 0 ? null : getChord(m[1]), length, lengthText: m[2] };
+  let symbol = m[1];
+  const germanB = german && /^B(?![#b])|\/B(?![#b])$/.test(symbol);
+  if (germanB) symbol = symbol.replace(/^B(?![#b])/, 'Bb').replace(/\/B(?![#b])$/, '/Bb');
+  return { token, chord: length === 0 ? null : getChord(symbol), length, lengthText: m[2], germanB };
 }
 
 /**
@@ -83,8 +95,9 @@ function readToken(token) {
  */
 export function replaceChords(text, chords) {
   let k = 0;
+  const german = usesGermanNames(text);
   return String(text).replace(/[^\s,|]+/g, token => {
-    const t = readToken(token);
+    const t = readToken(token, german);
     if (!t.chord || k >= chords.length) return token;
     const c = chords[k++];
     return c.symbol + (t.lengthText === undefined ? '' : `:${t.lengthText}`);

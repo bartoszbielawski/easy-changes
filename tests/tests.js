@@ -473,4 +473,37 @@ suite('Copying transposed chords');
   check('layout and lengths survive transposing into all 12 keys (4 progressions)', !bad.length, bad.slice(0, 3).join('; '));
 }
 
+// ===========================================================================
+suite('H and German naming');
+// German, Polish, Czech and Scandinavian charts call B natural "H", and in those charts a
+// plain "B" is B-flat. H is always B; a B means B-flat only in a progression that uses H.
+{
+  const H = [['H', 'B'], ['Hm', 'Bm'], ['H7', 'B7'], ['Hmaj7', 'Bmaj7'], ['Hm7b5', 'Bm7b5'], ['G/H', 'G/B'], ['H7/D#', 'B7/D#'], ['H#', 'B#']];
+  const wrongH = H.filter(([h, b]) => getChord(h)?.symbol !== b).map(([h, b]) => `${h} → ${getChord(h)?.symbol} (want ${b})`);
+  check(`H chords read as B (${H.map(x => x[0]).join(', ')})`, !wrongH.length, wrongH.join('; '));
+  check('B on its own stays B natural', getChord('B').rootPc === 11 && getChord('Bm').symbol === 'Bm');
+
+  const READINGS = [
+    ['F B C H7', 'F Bb C B7', true],        // Polish/German chart: B is B-flat
+    ['Bm H E', 'Bbm B E', true],            // b-moll next to H
+    ['Es B | F/B H:2', null, true],         // an unknown word stays unknown; F/B is F/Bb
+    ['Bb H', 'Bb B', false],                // an explicit Bb is already B-flat: nothing reread
+    ['F B C', 'F B C', false],              // no H: English naming
+    ['G D Em C', 'G D Em C', false],
+  ];
+  for (const [text, want, flagged] of READINGS) {
+    const r = parseProgression(text);
+    const got = r.chords.map(c => c.symbol).join(' ');
+    if (want === null) {
+      check(`"${text}" reads F/B as F/Bb and flags it`, r.germanB === flagged && got === 'Bb F/Bb B' && r.errors.join() === 'Es', `got "${got}", errors ${r.errors}, flag ${r.germanB}`);
+    } else {
+      check(`"${text}" reads as ${want}${flagged ? ' (B as B-flat, noted)' : ''}`, got === want && r.germanB === flagged, `got "${got}", flag ${r.germanB}`);
+    }
+  }
+  // Copying a German chart transposed: same layout, English names in the new key.
+  const german = 'F B | C H7:2';
+  const moved = replaceChords(german, transposeChords(parseProgression(german).chords, 2, undefined, 'auto'));
+  check(`"${german}" up a tone copies as "G C | D C#7:2"`, moved === 'G C | D C#7:2', `got "${moved}"`);
+}
+
 export default results;

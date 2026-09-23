@@ -6,7 +6,7 @@ conventions; this file explains what exists, why it works the way it does, and w
 ## Status
 
 Everything described below is built and verified: `python tools/validate.py` passes
-(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (154 checks).
+(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (163 checks).
 Both were re-run at the time of writing.
 
 **Chords page** (`index.html`)
@@ -40,6 +40,9 @@ Both were re-run at the time of writing.
 - **Copy chords**: under the arrangement heading, the chords in the chosen key or with the
   chosen capo, laid out as typed (bars, `C:2`, sections), with a button that copies them
   ("Capo 3: A E | F#m D:2"). Hidden when they match the chord box.
+- **H naming**: H is read as B on both pages. A progression that uses H is taken to be in
+  German/Polish naming, so its plain B is B♭ (noted under the chord box). Results stay in
+  English names. A German chart without any H ("F B C") is still read the English way.
 - **Harmony and scales** sit below the voicings in one fold-out section, closed for Beginner
   and Improver, open for Intermediate and Advanced; it follows the level when that changes.
 - **Scales**: ranked suggestions, a per-chord breakdown with a one-note fix where a chord
