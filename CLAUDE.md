@@ -21,7 +21,7 @@ python tools/validate.py
 Checks the chord and scale **data**: every voicing, in every key, sounds its chord's formula
 with the right bass, and its fingering is physically possible (1049 voicings, 18 scales).
 
-Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 180 checks).
+Open **http://localhost:8000/tests/** for the music-theory suite (`tests/tests.js`, 181 checks).
 Expected values are written out from theory, not computed by the code under test, and most
 checks run in all 12 keys. Add a case there whenever you change theory behaviour.
 
@@ -72,9 +72,12 @@ checks run in all 12 keys. Add a case there whenever you change theory behaviour
   up the neck), `LEVELS` in `js/difficulty.js`, and the scoring
   formula in `suggestScales` in `js/scales.js`. Changing them changes test expectations —
   run the suite.
-- **A page that fails to start shows a message, not a blank page.** A small ES5 script in each
-  page head listens for errors until the app sets `window.easyChangesReady = true` at the end of
-  `app.js` / `progression-app.js`. Keep that line last, and keep the head script ES5.
+- **A page that fails to start recovers or explains, never stays blank.** A small ES5 script in
+  each page head listens for errors until the app sets `window.easyChangesReady = true` at the end
+  of `app.js` / `progression-app.js`. The first failure in a tab re-downloads every script and data
+  file bypassing the cache and reloads once (stale files after a deploy are the usual cause:
+  Pages caches for 10 minutes); only a second failure shows the message, with the error text.
+  Keep the ready line last, and keep the head script ES5.
 - **Polish/German note names** are read in `parseChordSymbol`, English first, Polish only when
   English fails (so `Asus4` stays A sus4): H = B, -is sharps (Fis), -es/-s flats (Des, Es, As),
   lowercase = minor (`a`, `fis7`, `h`, `b` = B♭m), `-moll`/`-dur`. A progression with any such

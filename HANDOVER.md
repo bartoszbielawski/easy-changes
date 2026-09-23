@@ -6,7 +6,7 @@ conventions; this file explains what exists, why it works the way it does, and w
 ## Status
 
 Everything described below is built and verified: `python tools/validate.py` passes
-(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (180 checks).
+(1049 data voicings, 18 scales) and the browser suite at `/tests/` passes (181 checks).
 Both were re-run at the time of writing.
 
 **Chords page** (`index.html`)
@@ -53,7 +53,7 @@ Both were re-run at the time of writing.
 - **Harmony and scales** sit below the voicings in one fold-out section, closed by default.
 - **Scales**: ranked suggestions, a per-chord breakdown with a one-note fix where a chord
   doesn't fit, and a fretboard with the easiest hand position.
-- **Song presets** (`data/songs.json`): 36 progressions (30 rock & pop, 6 jazz), chords only; 18 have
+- **Song presets** (`data/songs.json`): 65 progressions (59 rock & pop, 6 jazz), chords only; 18 have
   verse + chorus and/or bar lengths (`|` bars, `||` sections, `C:2`). Picked from a
   dropdown grouped by style. The picker follows the chord box: it names the song while the
   chords match and resets when they are edited.
@@ -120,8 +120,11 @@ ever sounds wrong, change the constant and re-run the suite to see what it distu
 - **Song presets are simplified** to their main sections; 18 of 36 are fuller, the rest are
   one section without lengths. Key detection still reads Wish You Were Here as Em (not G)
   and power-chord songs like Smells Like Teen Spirit as the relative major.
-- **Browser support** is 2021 on (modules, top-level await, fetch), tested only in current
-  Chrome; older browsers get a message instead of a blank page.
+- **Browser support** is 2021 on (modules, top-level await, fetch), tested in current Chrome
+  and Firefox 156; older browsers get a message instead of a blank page. A stale cache right
+  after a deploy is recovered automatically by one cache-bypassing reload.
+- **Key detection** misreads some loops that lean on IV or V: Leaving on a Jet Plane reads as
+  C (not G), Highway to Hell as G (not A), Wish You Were Here as Em (not G).
 
 ## If you continue
 

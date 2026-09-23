@@ -145,6 +145,7 @@ footer > * + * { border-top: 0; padding-top: 0; }
 .error:empty, #prog-note:empty { display: none; }
 /* Shown instead of the page when it can't run: no JavaScript, or too old a browser. */
 .unsupported main > :not(.notice), .unsupported footer { display: none !important; }
+.notice .error-detail { display: block; margin-top: 6px; color: var(--muted); font-family: ui-monospace, Consolas, monospace; font-size: 0.8rem; }
 .notice {
   margin: 8px 0 16px; padding: 12px var(--gutter);
   background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent);

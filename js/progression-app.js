@@ -549,5 +549,7 @@ applyHash();
 // (The page writes the hash with replaceState, which doesn't fire this, so there is no loop.)
 window.addEventListener('hashchange', applyHash);
 
-// Tells the guard script in the page head that everything loaded and ran.
+// Tells the guard script in the page head that everything loaded and ran, and lets it
+// recover again after a future deploy (see the guard in the page head).
 window.easyChangesReady = true;
+try { sessionStorage.removeItem('easyChangesRefreshed'); } catch { /* storage off: nothing to clear */ }

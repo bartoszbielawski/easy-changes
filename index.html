@@ -22,14 +22,45 @@
   <link rel="preload" href="data/chord-types.json" as="fetch" crossorigin>
   <link rel="preload" href="data/guitar-voicings.json" as="fetch" crossorigin>
   <script>
-    // If this browser can't run the page's modules (older than 2021), or a data file
-    // fails to download, the modules fail silently and the page stays empty. Their
-    // errors still reach window, so show a message instead. Plain ES5 on purpose.
-    window.showUnsupported = function () {
+    // If the page's modules fail before the app starts, the page would stay empty. Their
+    // errors still reach window, so recover or explain instead. Plain ES5 on purpose.
+    //
+    // The usual cause is not an old browser but a stale cache: GitHub Pages lets browsers
+    // keep files for 10 minutes, so right after a deploy a returning visitor can get the
+    // new page with an old script. So the first failure in a tab re-downloads everything
+    // the page loaded, bypassing the cache, and reloads once. The app clears the flag once
+    // it has started, so the next deploy can recover the same way.
+    window.showUnsupported = function (e) {
       var note = document.getElementById('unsupported');
-      if (window.easyChangesReady || !note) return;
+      if (window.easyChangesReady || window.easyChangesRefreshing || !note) return;
+      // Retry only if the attempt can be recorded; otherwise a real fault would reload forever.
+      var retry = false;
+      try {
+        if (e && !sessionStorage.getItem('easyChangesRefreshed')) {
+          sessionStorage.setItem('easyChangesRefreshed', '1');
+          retry = true;
+        }
+      } catch (err) { retry = false; }
+      if (retry && window.fetch && window.Promise && window.performance && performance.getEntriesByType) {
+        window.easyChangesRefreshing = true;
+        var urls = [location.href.split('#')[0]];
+        var entries = performance.getEntriesByType('resource');
+        for (var i = 0; i < entries.length; i++) {
+          if (/\.(js|json|css)(\?|$)/.test(entries[i].name)) urls.push(entries[i].name);
+        }
+        Promise.all(urls.map(function (u) { return fetch(u, { cache: 'reload' }).catch(function () {}); }))
+          .then(function () { location.reload(); });
+        return;
+      }
       document.documentElement.className += ' unsupported';
       note.hidden = false;
+      // Name the error, so a report of this message says what actually went wrong.
+      if (e && e.message && !note.querySelector('small')) {
+        var detail = document.createElement('small');
+        detail.className = 'error-detail';
+        detail.textContent = e.message + (e.filename ? ' (' + e.filename.split('/').pop() + ', line ' + e.lineno + ')' : '');
+        note.appendChild(detail);
+      }
     };
     window.addEventListener('error', window.showUnsupported);
   </script>
@@ -43,7 +74,7 @@
 
   <main>
     <noscript><p class="notice">Easy Changes works out chords and voicings in your browser, so it needs JavaScript. Turn JavaScript on for this site and reload the page.</p></noscript>
-    <p class="notice" id="unsupported" hidden>Easy Changes couldn't start in this browser. It needs a browser from 2021 or later: a current Chrome, Edge, Firefox or Safari will work.</p>
+    <p class="notice" id="unsupported" hidden>Easy Changes couldn't start. Reload the page to try again. If it still doesn't work, your browser may be too old: the site needs one from 2021 or later, such as a current Chrome, Edge, Firefox or Safari.</p>
     <form id="search" class="entry" autocomplete="off">
       <label class="field wide">
         <span>Chord</span>

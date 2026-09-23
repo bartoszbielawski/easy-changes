@@ -348,6 +348,13 @@ suite('Song presets');
   // A chord held longer is written C:2, not C C: the planner counts a repeat as a change.
   const repeats = songData.songs.filter(s => parseProgression(s.chords).chords.some((c, i, all) => i > 0 && c.symbol === all[i - 1].symbol));
   check('no song repeats a chord back to back (lengths are written C:2)', !repeats.length, repeats.map(s => s.title).join(', '));
+  // The picker names a song by its chords, so two songs with the same chords would swap.
+  const seen = new Map(), clashes = [];
+  for (const song of songData.songs) {
+    const key = song.chords.split(/[\s,|]+/).filter(Boolean).join(' ');
+    if (seen.has(key)) clashes.push(`${seen.get(key)} = ${song.title}`); else seen.set(key, song.title);
+  }
+  check('no two songs have the same chords', !clashes.length, clashes.join('; '));
 }
 
 // ===========================================================================
